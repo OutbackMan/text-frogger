@@ -7,13 +7,14 @@ export default class TextCtx {
     this._reset_font();
 
     this._ch_width = parseFloat(this._ctx.measureText("M").width);
-    this._ch_height = parseFloat(this._get_ch_height()); // we want v/h monospace font
+    this._ch_height = parseFloat(this._get_ch_height());
 
     this._logical_width = logical_width;
     this._logical_height = logical_height;
-	this._buffer = new Array(logical_width * logical_height);
     this._min_canvas_width = parseInt(this._logical_width * this._ch_width, 10);
     this._min_canvas_height = parseInt(this._logical_height * this._ch_height, 10);
+
+	this._ch_buffer = new Array(logical_width * logical_height);
 
     this._scale_to_current_window_dimensions();
 
@@ -26,14 +27,14 @@ export default class TextCtx {
   }
 
   _reset_font() {
-    this._ctx.font = "normal 2px Inconsolata";
+    this._ctx.font = "normal 2px monospace";
     this._ctx.textBaseline = "hanging";
     this._ctx.textAlign = "left";
   }
 
   _get_ch_height() {
     let text_span_elem = document.createElement("span");
-    text_span_elem.style = "font: normal 2px Inconsolata;";
+    text_span_elem.style = "font: normal 2px monospace;";
     let span_text = document.createTextNode("Hg");
     text_span_elem.appendChild(span_text);
 
@@ -95,7 +96,7 @@ export default class TextCtx {
 	  y = this._logical_height - 1;
 	} 
 
-    this._buffer[y * this._logical_width + x] = new _Ch(glyph, color);	  
+    this._ch_buffer[y * this._logical_width + x] = new _Ch(glyph, color);	  
   }
 
   set_str(x, y, str, color) {
@@ -109,18 +110,35 @@ export default class TextCtx {
 	}
   }
 
-  _convert_logical_to_physical_coordinates(x, y) {
-    
-	return [
-      parseInt(x * this._ch_width, 10),
-      parseInt(y * this._ch_height, 10)
-	];
-  }
-
   render() {
     this._ctx.clearRect(0, 0, this._ctx.canvas.width, this._ctx.canvas.height); 
 
+    for (let row = 0; row < this._logical_height; ++row) {                            
+      let row_gradient = this._ctx.createLinearGradient(0, row, this._logical_width, row);       
+      let gradient_stop = 0.0;                                                            
+      let gradient_stop_inc = 1 / this._logical_width;               
+      let row_str = "";                                                             
+
+      for (let col = 0; col < this._logical_width; ++col) {                           
+		F_Common.debug_assert(row * this._logical_width + col < this._logical_width * this._logical_height, `${row * this._logical_width + col}`);
+        let [ch_glyph, ch_color] = Object.values(this._ch_buffer[row * this._logical_width + col]);
+                                                                                    
+        row_gradient.addColorStop(gradient_stop, ch_color);                             
+        if (col + 1 === this._logical_width) {            
+          row_gradient.addColorStop(1.0, ch_color);           
+        } else {                                                                 
+          row_gradient.addColorStop(gradient_stop + gradient_stop_inc, ch_color);
+        }                                                                           
+                                                                                                                                        
+        gradient_stop += gradient_stop_inc;                                                      
+        row_str += ch_glyph;                                                      
+      }                                                                             
+                                                                                
+      this._ctx.fillStyle = row_gradient;                                                 
+      this._ctx.fillText(0, parseInt(row * this.ch_height), row_str);                                            
+    }                                       
   }
+
 }
 
 class _Ch {                                                                    
@@ -129,11 +147,3 @@ class _Ch {
     this.color = color;                                                         
   }                                                                             
 }                                                                               
-
-
-
-
-// int8array
-// String.charcodeat, fromcharcode
-var CSS_COLOR_NAMES = ["AliceBlue","AntiqueWhite","Aqua","Aquamarine","Azure","Beige","Bisque","Black","BlanchedAlmond","Blue","BlueViolet","Brown","BurlyWood","CadetBlue","Chartreuse","Chocolate","Coral","CornflowerBlue","Cornsilk","Crimson","Cyan","DarkBlue","DarkCyan","DarkGoldenRod","DarkGray","DarkGrey","DarkGreen","DarkKhaki","DarkMagenta","DarkOliveGreen","Darkorange","DarkOrchid","DarkRed","DarkSalmon","DarkSeaGreen","DarkSlateBlue","DarkSlateGray","DarkSlateGrey","DarkTurquoise","DarkViolet","DeepPink","DeepSkyBlue","DimGray","DimGrey","DodgerBlue","FireBrick","FloralWhite","ForestGreen","Fuchsia","Gainsboro","GhostWhite","Gold","GoldenRod","Gray","Grey","Green","GreenYellow","HoneyDew","HotPink","IndianRed","Indigo","Ivory","Khaki","Lavender","LavenderBlush","LawnGreen","LemonChiffon","LightBlue","LightCoral","LightCyan","LightGoldenRodYellow","LightGray","LightGrey","LightGreen","LightPink","LightSalmon","LightSeaGreen","LightSkyBlue","LightSlateGray","LightSlateGrey","LightSteelBlue","LightYellow","Lime","LimeGreen","Linen","Magenta","Maroon","MediumAquaMarine","MediumBlue","MediumOrchid","MediumPurple","MediumSeaGreen","MediumSlateBlue","MediumSpringGreen","MediumTurquoise","MediumVioletRed","MidnightBlue","MintCream","MistyRose","Moccasin","NavajoWhite","Navy","OldLace","Olive","OliveDrab","Orange","OrangeRed","Orchid","PaleGoldenRod","PaleGreen","PaleTurquoise","PaleVioletRed","PapayaWhip","PeachPuff","Peru","Pink","Plum","PowderBlue","Purple","Red","RosyBrown","RoyalBlue","SaddleBrown","Salmon","SandyBrown","SeaGreen","SeaShell","Sienna","Silver","SkyBlue","SlateBlue","SlateGray","SlateGrey","Snow","SpringGreen","SteelBlue","Tan","Teal","Thistle","Tomato","Turquoise","Violet","Wheat","White","WhiteSmoke","Yellow","YellowGreen"];
-
