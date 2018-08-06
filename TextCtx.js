@@ -137,6 +137,13 @@ export default class TextCtx {
 }
 
 // Object.create(null) more memory efficient
+
+/* let ch = Object.create(null);
+ * ch.glyph = glyph;
+ * ch.bg_color = bg_color;
+ * ch.fg_color = fg_color;
+ */
+
 class _Ch {                                                                    
   constructor(glyph, color) {                                                   
     this.glyph = glyph;                                                         
