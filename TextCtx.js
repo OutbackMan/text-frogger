@@ -120,27 +120,23 @@ export default class TextCtx {
       let row_str = "";                                                             
 
       for (let col = 0; col < this._logical_width; ++col) {                           
-		F_Common.debug_assert(row * this._logical_width + col < this._logical_width * this._logical_height, `${row * this._logical_width + col}`);
         let [ch_glyph, ch_color] = Object.values(this._ch_buffer[row * this._logical_width + col]);
                                                                                     
         row_gradient.addColorStop(gradient_stop, ch_color);                             
-        if (col + 1 === this._logical_width) {            
-          row_gradient.addColorStop(1.0, ch_color);           
-        } else {                                                                 
-          row_gradient.addColorStop(gradient_stop + gradient_stop_inc, ch_color);
-        }                                                                           
-                                                                                                                                        
+        row_gradient.addColorStop(gradient_stop + gradient_stop_inc, ch_color);
+
         gradient_stop += gradient_stop_inc;                                                      
         row_str += ch_glyph;                                                      
       }                                                                             
                                                                                 
-      this._ctx.fillStyle = row_gradient;                                                 
-      this._ctx.fillText(0, parseInt(row * this.ch_height), row_str);                                            
+      this._ctx.fillStyle = row_gradient;
+      this._ctx.fillText(row_str, 0, parseInt(row * this._ch_height));
     }                                       
   }
 
 }
 
+// Object.create(null) more memory efficient
 class _Ch {                                                                    
   constructor(glyph, color) {                                                   
     this.glyph = glyph;                                                         
