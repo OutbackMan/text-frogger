@@ -20,8 +20,8 @@ function frogger_loop(frame_start_time, ctx) {
 
   for (let row = 0; row < ctx._logical_height; ++row) {
     ctx.set_str(0, row, "#".repeat(ctx._logical_width), "black"); 
-    ctx.set_str(0, 50, "X".repeat(20), "yellow");
   }
+
 
   ctx.render();
 

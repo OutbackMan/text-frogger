@@ -113,8 +113,8 @@ export default class TextCtx {
   render() {
     this._ctx.clearRect(0, 0, this._ctx.canvas.width, this._ctx.canvas.height); 
 
-    for (let row = 0; row < this._logical_height; ++row) {                            
-      let row_gradient = this._ctx.createLinearGradient(0, row, this._logical_width, row);       
+    for (let row = 0; row < this._logical_height; ++row) { 
+      let row_gradient = this._ctx.createLinearGradient(0, 0, this._ch_width * this._logical_width, 0);       
       let gradient_stop = 0.0;                                                            
       let gradient_stop_inc = 1 / this._logical_width;               
       let row_str = "";                                                             
@@ -130,7 +130,7 @@ export default class TextCtx {
       }                                                                             
                                                                                 
       this._ctx.fillStyle = row_gradient;
-      this._ctx.fillText(row_str, 0, parseInt(row * this._ch_height));
+      this._ctx.fillText(row_str, 0, parseInt(row * this._ch_height, 10));
     }                                       
   }
 
