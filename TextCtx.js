@@ -6,8 +6,7 @@ export default class TextCtx {
     this._ctx = canvas_dom_elem.getContext("2d");
     this._reset_font();
 
-    this._ch_width = parseFloat(this._ctx.measureText("Hg").width);
-    // this._ch_height = 2;
+    this._ch_width = parseFloat(this._ctx.measureText("M").width);
     this._ch_height = parseFloat(this._get_ch_height()); // we want v/h monospace font
 
     this._logical_width = logical_width;
@@ -78,24 +77,45 @@ export default class TextCtx {
   }
 
   render_text(x, y, text, fill_style) {
-    if (x < 0 || x >= this._logical_width || y < 0 || y >= this._logical_height) {
-      if (F_Config.WANT_DEBUG) {
-        F_Common.breakpoint(`Invalid renderer coordinates (${x}, ${y})`);
-      } else {
-        return;
-      } 
+    if (x + text.length - 1 >= this._logical_width) {
+	  F_Common.debug_breakpoint(`Text "${text}" drawn at (${x}, ${y}) exceeds canvas width`);
+	  // canvas cuts off text by default
     }
-
-    let physical_x = parseInt(x * this._ch_width, 10);
-    let physical_y = parseInt(y * this._ch_height, 10);
-
-    if (x + text.length > this._logical_width) {
-      console.error(`Text string too long`); 
-      debugger;
-    }
+   
+    let [physical_x, physical_y] = this._convert_logical_to_physical_coordinates(x, y);
 
     this._ctx.fillStyle = fill_style;
     this._ctx.fillText(text, physical_x, physical_y);
+  }
+
+  render_text_fill(x, y0, y1, text, fill_style) {
+    for (let cur_row = y0; cur_row < y1; ++cur_row) {
+      this.render_text(x, cur_row, text, fill_style);
+	}
+  }
+
+  _convert_logical_to_physical_coordinates(x, y) {
+    if (x < 0) {
+	  F_Common.debug_breakpoint(`Invalid coordinates (${x}, ${y}): x must be >= 0`);	
+	  x = 0; 
+	} 
+	if (x >= this._logical_width) {
+	  F_Common.debug_breakpoint(`Invalid coordinates (${x}, ${y}): x must be < ${this._logical_width}`);	
+	  x = this._logical_width - 1;
+	} 
+	if (y < 0) {
+	  F_Common.debug_breakpoint(`Invalid coordinates (${x}, ${y}): y must be >= 0`);	
+	  y = 0;
+	} 
+	if (y >= this._logical_height) {
+	  F_Common.debug_breakpoint(`Invalid coordinates (${x}, ${y}): y must be < ${this._logical_height}`);	
+	  y = this._logical_height - 1;
+	} 
+    
+	return [
+      parseInt(x * this._ch_width, 10),
+      parseInt(y * this._ch_height, 10)
+	];
   }
 
   clear() {

@@ -1,6 +1,10 @@
-export function breakpoint(msg) {
-  console.info(msg);
-  debugger;
+import F_Config from "./Config.js";
+
+export function debug_breakpoint(msg) {
+  if (F_Config.WANT_DEBUG) {
+    console.info(msg);
+    debugger;
+  }
 }
 
 export function assert(cond, msg) {
