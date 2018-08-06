@@ -11,9 +11,6 @@ class Lane {
   }
 }
 
-const FPS = 10
-const FRAME_INTERVAL = parseFloat(1000 / FPS); 
-
 function start_frogger(e) {
   let lanes = [
     new Lane(0.0, "xxx..xxx..xxx..xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"),
@@ -44,31 +41,31 @@ function frogger_loop(frame_start_time, ctx, lanes, time_since_start, cell_dim) 
   }
 
   let time_between_frames = frame_start_time - frogger_loop.when_last_frame;
+  frogger_loop.when_last_frame = frame_start_time;
 
-  if (time_between_frames > FRAME_INTERVAL) {
-    frogger_loop.when_last_frame = frame_start_time;
-
-    time_since_start += time_between_frames;
+  time_since_start += time_between_frames;
 	  
-    ctx.clear();
+  ctx.clear();
 
-    let x = 0 
-    let y = 0;
-    lanes.forEach((lane) => {
-	  // perhaps divide by 1000 to get seconds
-      let start_pos = parseInt(time_since_start * lane.x_vel, 10) % 64; // just get units (times cancel)
-      if (start_pos < 0) {
-        start_pos = 64 - (Math.abs(start_pos) % 64);		
-      }
+  let x = 0 
+  let y = 0;
+  lanes.forEach((lane) => {
+    let start_pos = parseInt((time_since_start / 1000) * lane.x_vel, 10) % 64; // just get units (times cancel)
+	// to achieve character by character animation we want offset
+	// now, 0.5 --> 4, 0.25 --> 2
+	let cell_offset = parseInt(cell_dim * ((time_since_start / 1000) * lane.x_vel)) % cell_dim;
 
-      for (let i = 0; i < ctx._logical_width / cell_dim; ++i) {
-        let graphic = lane.content[(start_pos + i) % 64];	
-        ctx.render_text_fill((x + i)*cell_dim, y*cell_dim, (y + 1)*cell_dim, graphic.repeat(cell_dim), "black");
-      }
-      ++y;
-    });
-  }
+    if (start_pos < 0) {
+      start_pos = 64 - (Math.abs(start_pos) % 64);		
+    }
 
+    for (let i = 0; i < ctx._logical_width / cell_dim; ++i) {
+      let graphic = lane.content[(start_pos + i) % 64];	
+      ctx.render_text_fill((x + i)*cell_dim - cell_offset, y*cell_dim, (y + 1)*cell_dim, graphic.repeat(cell_dim), "black");
+    }
+    ++y;
+  });
+  
   window.requestAnimationFrame((start_time) => {
     frogger_loop(start_time, ctx, lanes, time_since_start, cell_dim); 
   });
@@ -83,8 +80,17 @@ document.addEventListener("DOMContentLoaded", start_frogger);
 	}	  
 
 	switch (e.key) {
-		
+	case "UpArrow":
+	  frog.y -= 1;
 	}
 
     e.preventDefault();
-  }); */
+  });
+  
+  for graphics, we draw part of the sprite relative to the cellsize 
+  
+
+  TODO(Ryan): fix initial scaling issues SOLUTION --> write to intermediate buffer with lineargradients
+  PERFORMANCE(Ryan): write as webassembly library
+  
+  */

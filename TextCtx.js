@@ -11,6 +11,7 @@ export default class TextCtx {
 
     this._logical_width = logical_width;
     this._logical_height = logical_height;
+	this._buffer = new Array(logical_width * logical_height);
     this._min_canvas_width = parseInt(this._logical_width * this._ch_width, 10);
     this._min_canvas_height = parseInt(this._logical_height * this._ch_height, 10);
 
@@ -25,15 +26,15 @@ export default class TextCtx {
   }
 
   _reset_font() {
-    this._ctx.font = "normal 2px monospace";
+    this._ctx.font = "normal 2px Inconsolata";
     this._ctx.textBaseline = "hanging";
-    this._ctx.textAlign = "start";
+    this._ctx.textAlign = "left";
   }
 
   _get_ch_height() {
     let text_span_elem = document.createElement("span");
-    text_span_elem.style = "font: normal 2px monospace;";
-    let span_text = document.createTextNode("H"); // only use capitals
+    text_span_elem.style = "font: normal 2px Inconsolata;";
+    let span_text = document.createTextNode("Hg");
     text_span_elem.appendChild(span_text);
 
     let moveable_div_elem = document.createElement("div");
@@ -76,25 +77,7 @@ export default class TextCtx {
     this._ctx.scale(this._x_scale, this._y_scale);
   }
 
-  render_text(x, y, text, fill_style) {
-    if (x + text.length - 1 >= this._logical_width) {
-	  F_Common.debug_breakpoint(`Text "${text}" drawn at (${x}, ${y}) exceeds canvas width`);
-	  // canvas cuts off text by default
-    }
-   
-    let [physical_x, physical_y] = this._convert_logical_to_physical_coordinates(x, y);
-
-    this._ctx.fillStyle = fill_style;
-    this._ctx.fillText(text, physical_x, physical_y);
-  }
-
-  render_text_fill(x, y0, y1, text, fill_style) {
-    for (let cur_row = y0; cur_row < y1; ++cur_row) {
-      this.render_text(x, cur_row, text, fill_style);
-	}
-  }
-
-  _convert_logical_to_physical_coordinates(x, y) {
+  set_ch(x, y, glyph, color) {
     if (x < 0) {
 	  F_Common.debug_breakpoint(`Invalid coordinates (${x}, ${y}): x must be >= 0`);	
 	  x = 0; 
@@ -111,6 +94,22 @@ export default class TextCtx {
 	  F_Common.debug_breakpoint(`Invalid coordinates (${x}, ${y}): y must be < ${this._logical_height}`);	
 	  y = this._logical_height - 1;
 	} 
+
+    this._buffer[y * this._logical_width + x] = new _Ch(glyph, color);	  
+  }
+
+  set_str(x, y, str, color) {
+    if (x + str.length - 1 >= this._logical_width) {
+	  F_Common.debug_breakpoint(`Text "${text}" drawn at (${x}, ${y}) exceeds canvas width`);
+	  // canvas cuts off text by default
+    }
+
+    for (let ch_index = 0; ch_index < str.length; ++ch_index) {
+      this.set_ch(x + ch_index, y, str[ch_index], color);
+	}
+  }
+
+  _convert_logical_to_physical_coordinates(x, y) {
     
 	return [
       parseInt(x * this._ch_width, 10),
@@ -118,8 +117,23 @@ export default class TextCtx {
 	];
   }
 
-  clear() {
+  render() {
     this._ctx.clearRect(0, 0, this._ctx.canvas.width, this._ctx.canvas.height); 
+
   }
 }
+
+class _Ch {                                                                    
+  constructor(glyph, color) {                                                   
+    this.glyph = glyph;                                                         
+    this.color = color;                                                         
+  }                                                                             
+}                                                                               
+
+
+
+
+// int8array
+// String.charcodeat, fromcharcode
+var CSS_COLOR_NAMES = ["AliceBlue","AntiqueWhite","Aqua","Aquamarine","Azure","Beige","Bisque","Black","BlanchedAlmond","Blue","BlueViolet","Brown","BurlyWood","CadetBlue","Chartreuse","Chocolate","Coral","CornflowerBlue","Cornsilk","Crimson","Cyan","DarkBlue","DarkCyan","DarkGoldenRod","DarkGray","DarkGrey","DarkGreen","DarkKhaki","DarkMagenta","DarkOliveGreen","Darkorange","DarkOrchid","DarkRed","DarkSalmon","DarkSeaGreen","DarkSlateBlue","DarkSlateGray","DarkSlateGrey","DarkTurquoise","DarkViolet","DeepPink","DeepSkyBlue","DimGray","DimGrey","DodgerBlue","FireBrick","FloralWhite","ForestGreen","Fuchsia","Gainsboro","GhostWhite","Gold","GoldenRod","Gray","Grey","Green","GreenYellow","HoneyDew","HotPink","IndianRed","Indigo","Ivory","Khaki","Lavender","LavenderBlush","LawnGreen","LemonChiffon","LightBlue","LightCoral","LightCyan","LightGoldenRodYellow","LightGray","LightGrey","LightGreen","LightPink","LightSalmon","LightSeaGreen","LightSkyBlue","LightSlateGray","LightSlateGrey","LightSteelBlue","LightYellow","Lime","LimeGreen","Linen","Magenta","Maroon","MediumAquaMarine","MediumBlue","MediumOrchid","MediumPurple","MediumSeaGreen","MediumSlateBlue","MediumSpringGreen","MediumTurquoise","MediumVioletRed","MidnightBlue","MintCream","MistyRose","Moccasin","NavajoWhite","Navy","OldLace","Olive","OliveDrab","Orange","OrangeRed","Orchid","PaleGoldenRod","PaleGreen","PaleTurquoise","PaleVioletRed","PapayaWhip","PeachPuff","Peru","Pink","Plum","PowderBlue","Purple","Red","RosyBrown","RoyalBlue","SaddleBrown","Salmon","SandyBrown","SeaGreen","SeaShell","Sienna","Silver","SkyBlue","SlateBlue","SlateGray","SlateGrey","Snow","SpringGreen","SteelBlue","Tan","Teal","Thistle","Tomato","Turquoise","Violet","Wheat","White","WhiteSmoke","Yellow","YellowGreen"];
 
