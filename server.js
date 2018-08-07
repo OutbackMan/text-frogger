@@ -27,9 +27,9 @@ void function server() {
   
   }
 
-  initialize_cli(CMD_LINE_ARGS.NAME, CMD_LINE_ARGS.FORWARDER_IP, CMD_LINE_ARGS.FORWARDER_PORT);
-	
-	/*
+  start();
+        
+        /*
 	FS.watchFile("packet-parser.js", (curr, prev) => {
 		if (curr.mtime !== prev.mtime) {
 			PacketParser = reload_module("./packet-parser");	
@@ -39,87 +39,97 @@ void function server() {
 
 }();
 
-function initialize_cli(name, forwarder_ip, forwarder_port) {
-	let readline_interface = Readline.createInterface({
-					input: process.stdin,
-					output: process.stdout
-				});
-	readline_interface.setPrompt(`(${name}) >`);
+/* COMMANDS:
+ *  --> restart/reload, ban/kick ip,  
+ */
 
-	readline_interface.write(`${name} WebSocket proxy forwarding to ${forwarder_ip}:${forwarder_port}\n`);
-	readline_interface.write(`Waiting for a client to connect...\n`);
+function start() {
+  initialize_cli();
+  initialize_server();
+}
 
-    	let proxy = new WS.Server({port: 8080});
+function initialize_cli() {
+  let cli = Readline.createInterface({
+	      input: process.stdin,
+	      output: process.stdout
+            });
 
-    	proxy.on("connection", (client) => {
-		readline_interface.write(`Client connected.\n`);
-		client.on("close", (client) => {
-            		readline_interface.write(`Client disconnected.\n`);                                 
-		});                                        
+  // display num connections
+  cli.setPrompt("(Frogger Server) >");
 
-		readline_interface.write(`Attempting to establish connection with ${forwarder_ip}:{forwarder_port}\n`);
-		let forwarder = new WS(`ws://${forwarder_ip}:${forwarder_port}`);
-		forwarder.on("open", () => {
-			readline_interface.write(`Connection established with ${forwarder_ip}:{forwarder_port}\n`);
-			readline_interface.prompt();	
+  cli.on("close", () => {
+    cli.write("Exiting Frogger Server...");
+    process.exit(0);
+  });
 
-			readline_interface.on("close", () => {
-				readline_interface.write(`exiting ${name}\n`);
-				forwarder.close();
-				proxy.close();
-				process.exit(0);
-			});
+  cli.on("SIGINT", () => {
+  	cli.close();
+  });
+  
+  cli.on("line", (line) => {
+    switch (line.trim()) {
+    case "exit":
+      cli.close();
+      break;
+    default:
+      cli.write("unknown command");
+    }
+  });
+  
+  
+  
+  client.on("message", (msg) => {
+  	cli.write(`[client] --> ${msg}\n`);
+  	forwarder.send(msg);
+  });
+  
+  forwarder.on("message", (msg) => {
+  	cli.write(`[forwarder] <-- ${msg}\n`);
+  	client.send(msg);
+  });
+  
+  forwarder.on("close", (forwader) => {
+  	cli.write(`forwarder terminated the connection.\n`);
+  });
+  
+}
 
-			readline_interface.on("line", (line) => {
-				switch (line.trim()) {
-				case "exit":
-					readline_interface.close();
-					break;
-				default:
-					readline_interface.write("unknown command");
-				}
-				readline_interface.prompt();
-			});
+function initialize_server() {
+  let cur_id = 0;
+  let player_num = 0;
 
-			readline_interface.on("SIGINT", () => {
-				readline_interface.close();
-			});
+  let clients = Array<client>;
+  let tmp_data = ByteArray<1440>;
+  let max_players = 30;
 
+  // could verify client here and set max payload
+  let server = new WS.Server({"host": "", "port": 80});
+  
+  server.on("connection", (client) => {
+    if (player_num < max_players) {
+      clients.push({cur_id, client, time.now()}); 
+      player_num++;
+      cur_id++;
+      client.send(`0 ${cur_id}`); // establish connection
+    } else {
+      client.send(`3 ${cur_id}`); // server full
+    }
+  	cli.write(`Client connected.\n`);
+  	client.on("close", (client) => {
+      		cli.write(`Client disconnected.\n`);                                 
+  	});                                        
+    
+    client.on("message", (msg) => {
+    
+    });
+  });
 
-			client.on("message", (msg) => {
-				readline_interface.write(`[client] --> ${msg}\n`);
-				forwarder.send(msg);
-			});
-
-			forwarder.on("message", (msg) => {
-				readline_interface.write(`[forwarder] <-- ${msg}\n`);
-				client.send(msg);
-			});
-
-			forwarder.on("close", (forwader) => {
-				readline_interface.write(`forwarder terminated the connection.\n`);
-			});
-		});
-    	});
 }
 
 function reload_module(module_name) {
     delete require.cache[require.resolve(module_name)]                               
     return require(module)                                                      
 } 
-
-
-
-
-
-
-
-
-
-function create_client_info_holder() {
-  let client_info = Object.create(null);	
-  client
-}
 
 client = {
  "socket":
