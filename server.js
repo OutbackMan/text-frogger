@@ -1,14 +1,28 @@
+function create_client_info_holder() {
+  let client_info = Object.create(null);	
+  client
+}
+
 client = {
- "index": 0,
- "ip",
- "socket",
+ "socket":
+ "timeout":
+ "id":
  "closing": false,
- "read_buf": new Int32Array()
+ "read_buf": new Int32Array(),
+ "connecting": false,
+ "connected": false
 };
 
-server = {
-  "clients": []	
-};
+/*
+ client connect --> server (record id) 
+
+ frame: position,  --> server (broadcast)
+
+ shoot: shooter_id shot_id health decrease  
+
+ client disconnect --> server (delete id, broadcast)
+ 
+*/
 
 packet_buffer = {
   "buff": new ByteArray(),
@@ -30,7 +44,7 @@ function get_integer_from_buf() {
 function clear_packet_buffer() // once packets are sent to the client we no
 // longer want them on the server
 
-function initialize_server() {
+void function server() {
    let server_socket = new WebSocket();	
 
    server_socket.onconnect = (evt) => {
@@ -40,8 +54,9 @@ function initialize_server() {
 	   }	 
 	 }    
 
-     evt.socket.onmessage() {
-		 
+     evt.socket.onmessage(evt) {
+	   if (evt.data.length == 0) return;
+	   // switch (read_packet_id(evt.data)
 	 }
-   };
-}
+   }
+}();
