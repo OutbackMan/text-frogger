@@ -15,6 +15,12 @@ export default class TextCtx {
     this._min_canvas_height = parseInt(this._logical_height * this._ch_height, 10);
 
 	this._ch_buffer = new Array(logical_width * logical_height);
+	for (let i = 0; i < logical_width * logical_height; ++i) {
+      this._ch_buffer[i] = Object.create(null);
+      this._ch_buffer[i].glyph = " ";
+      this._ch_buffer[i].bg_color = "white";
+      this._ch_buffer[i].fg_color = "black";
+	}
 
     this._scale_to_current_window_dimensions();
 
@@ -78,7 +84,7 @@ export default class TextCtx {
     this._ctx.scale(this._x_scale, this._y_scale);
   }
 
-  set_ch(x, y, glyph, color) {
+  set_ch(x, y, glyph, bg_color, fg_color) {
     if (x < 0) {
 	  F_Common.debug_breakpoint(`Invalid coordinates (${x}, ${y}): x must be >= 0`);	
 	  x = 0; 
@@ -96,17 +102,20 @@ export default class TextCtx {
 	  y = this._logical_height - 1;
 	} 
 
-    this._ch_buffer[y * this._logical_width + x] = new _Ch(glyph, color);	  
+    let ch_buf_index = y * this._logical_width + x;
+    this._ch_buffer[ch_buf_index].glyph = glyph;
+    this._ch_buffer[ch_buf_index].bg_color = bg_color;
+    this._ch_buffer[ch_buf_index].fg_color = fg_color;
   }
 
-  set_str(x, y, str, color) {
+  set_str(x, y, str, bg_color, fg_color) {
     if (x + str.length - 1 >= this._logical_width) {
 	  F_Common.debug_breakpoint(`Text "${text}" drawn at (${x}, ${y}) exceeds canvas width`);
 	  // canvas cuts off text by default
     }
 
     for (let ch_index = 0; ch_index < str.length; ++ch_index) {
-      this.set_ch(x + ch_index, y, str[ch_index], color);
+      this.set_ch(x + ch_index, y, str[ch_index], fg_color, bg_color);
 	}
   }
 
@@ -114,39 +123,32 @@ export default class TextCtx {
     this._ctx.clearRect(0, 0, this._ctx.canvas.width, this._ctx.canvas.height); 
 
     for (let row = 0; row < this._logical_height; ++row) { 
-      let row_gradient = this._ctx.createLinearGradient(0, 0, this._ch_width * this._logical_width, 0);       
+      let bg_gradient = this._ctx.createLinearGradient(0, 0, this._ch_width * this._logical_width, 0);       
+      let fg_gradient = this._ctx.createLinearGradient(0, 0, this._ch_width * this._logical_width, 0);       
+
       let gradient_stop = 0.0;                                                            
       let gradient_stop_inc = 1 / this._logical_width;               
       let row_str = "";                                                             
 
       for (let col = 0; col < this._logical_width; ++col) {                           
-        let [ch_glyph, ch_color] = Object.values(this._ch_buffer[row * this._logical_width + col]);
+        let [ch_glyph, ch_bg_color, ch_fg_color] = Object.values(this._ch_buffer[row * this._logical_width + col]);
                                                                                     
-        row_gradient.addColorStop(gradient_stop, ch_color);                             
-        row_gradient.addColorStop(gradient_stop + gradient_stop_inc, ch_color);
+        bg_gradient.addColorStop(gradient_stop, ch_bg_color);                             
+        bg_gradient.addColorStop(gradient_stop + gradient_stop_inc, ch_bg_color);
+
+        fg_gradient.addColorStop(gradient_stop, ch_fg_color);                             
+        fg_gradient.addColorStop(gradient_stop + gradient_stop_inc, ch_fg_color);
 
         gradient_stop += gradient_stop_inc;                                                      
         row_str += ch_glyph;                                                      
       }                                                                             
+
+      this._ctx.fillStyle = bg_gradient;
+	  this._ctx.fillRect(0, parseInt(row * this._ch_height, 10), this._ch_width * this._logical_width, this._ch_height);
                                                                                 
-      this._ctx.fillStyle = row_gradient;
+      this._ctx.fillStyle = fg_gradient;
       this._ctx.fillText(row_str, 0, parseInt(row * this._ch_height, 10));
     }                                       
   }
 
 }
-
-// Object.create(null) more memory efficient
-
-/* let ch = Object.create(null);
- * ch.glyph = glyph;
- * ch.bg_color = bg_color;
- * ch.fg_color = fg_color;
- */
-
-class _Ch {                                                                    
-  constructor(glyph, color) {                                                   
-    this.glyph = glyph;                                                         
-    this.color = color;                                                         
-  }                                                                             
-}                                                                               

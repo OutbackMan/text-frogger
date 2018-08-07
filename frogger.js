@@ -19,9 +19,8 @@ function frogger_loop(frame_start_time, ctx) {
   frogger_loop.when_last_frame = frame_start_time;
 
   for (let row = 0; row < ctx._logical_height; ++row) {
-    ctx.set_str(0, row, "#".repeat(ctx._logical_width), "black"); 
+    ctx.set_str(0, row, "#".repeat(ctx._logical_width), "white", "black"); 
   }
-
 
   ctx.render();
 
