@@ -115,7 +115,7 @@ export default class TextCtx {
     }
 
     for (let ch_index = 0; ch_index < str.length; ++ch_index) {
-      this.set_ch(x + ch_index, y, str[ch_index], fg_color, bg_color);
+      this.set_ch(x + ch_index, y, str[ch_index], bg_color, fg_color);
 	}
   }
 
@@ -123,31 +123,33 @@ export default class TextCtx {
     this._ctx.clearRect(0, 0, this._ctx.canvas.width, this._ctx.canvas.height); 
 
     for (let row = 0; row < this._logical_height; ++row) { 
-      let bg_gradient = this._ctx.createLinearGradient(0, 0, this._ch_width * this._logical_width, 0);       
-      let fg_gradient = this._ctx.createLinearGradient(0, 0, this._ch_width * this._logical_width, 0);       
+	  const TOTAL_CH_WIDTH = parseInt(this._ch_width * this._logical_width, 10);
+      let bg_gradient = this._ctx.createLinearGradient(0, 0, TOTAL_CH_WIDTH, 0);       
+      let fg_gradient = this._ctx.createLinearGradient(0, 0, TOTAL_CH_WIDTH, 0);       
 
       let gradient_stop = 0.0;                                                            
-      let gradient_stop_inc = 1 / this._logical_width;               
+      const GRADIENT_STOP_INC = 1 / this._logical_width;               
       let row_str = "";                                                             
 
       for (let col = 0; col < this._logical_width; ++col) {                           
-        let [ch_glyph, ch_bg_color, ch_fg_color] = Object.values(this._ch_buffer[row * this._logical_width + col]);
-                                                                                    
-        bg_gradient.addColorStop(gradient_stop, ch_bg_color);                             
-        bg_gradient.addColorStop(gradient_stop + gradient_stop_inc, ch_bg_color);
+        const [CH_GLYPH, CH_BG_COLOR, CH_FG_COLOR] = Object.values(this._ch_buffer[row * this._logical_width + col]);
 
-        fg_gradient.addColorStop(gradient_stop, ch_fg_color);                             
-        fg_gradient.addColorStop(gradient_stop + gradient_stop_inc, ch_fg_color);
+        bg_gradient.addColorStop(gradient_stop, CH_BG_COLOR);                             
+        bg_gradient.addColorStop(gradient_stop + GRADIENT_STOP_INC, CH_BG_COLOR);
 
-        gradient_stop += gradient_stop_inc;                                                      
-        row_str += ch_glyph;                                                      
+        fg_gradient.addColorStop(gradient_stop, CH_FG_COLOR);                             
+        fg_gradient.addColorStop(gradient_stop + GRADIENT_STOP_INC, CH_FG_COLOR);
+
+        gradient_stop += GRADIENT_STOP_INC;                                                      
+        row_str += CH_GLYPH;                                                      
       }                                                                             
 
+      const START_Y = parseInt(row * this._ch_height, 10);
       this._ctx.fillStyle = bg_gradient;
-	  this._ctx.fillRect(0, parseInt(row * this._ch_height, 10), this._ch_width * this._logical_width, this._ch_height);
+	  this._ctx.fillRect(0, START_Y, TOTAL_CH_WIDTH, parseInt(this._ch_height, 10));
                                                                                 
       this._ctx.fillStyle = fg_gradient;
-      this._ctx.fillText(row_str, 0, parseInt(row * this._ch_height, 10));
+      this._ctx.fillText(row_str, 0, START_Y);
     }                                       
   }
 
