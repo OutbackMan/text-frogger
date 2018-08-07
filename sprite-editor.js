@@ -104,3 +104,63 @@ function sprite_editor_loop(frame_start_time, ctx) {
 
 
 
+
+
+// let unsigned = 32 >>> 0; 
+
+// TODO(Ryan): make circular
+class UndoRedoSystem {
+  constructor(length) {
+    this.action_stack = [];
+	this.current = -1; 
+  }
+
+  add_action(item) {
+    this.action_stack.push(item);
+	++this.current;
+  }
+
+  perform_undo() {
+    if (this.current >= 0) {
+	  this.action_stack[this.current--].undo_action(); 
+	} else {
+      Common.debug_log("Already at oldest change");
+	} 
+  }
+
+  perform_redo() {
+    if (this.current + 1 < this.action_stack.length) {
+	  this.action_stack[this.current++].redo_action(); 
+	} else {
+      Common.debug_log("Already at most recent change");
+	} 
+  }
+}
+
+
+=======================
+suite name
+-----------------------
+test_example() --> PASSED
+
+-----------------------
+Ran 8 tests
+
+=======================
+suite two name
+
+
+-----------------------
+Ran 10 tests
+
+=======================
+Application
+-----------------------
+Ran 2 suites, 18 tests
+
+function mouse() {
+  let ctx = new ctx(120, 80);	
+}
+
+
+

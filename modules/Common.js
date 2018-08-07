@@ -15,3 +15,9 @@ export function debug_assert(cond, msg) {
     }
   }
 }
+
+export function debug_log(msg) {
+  if (F_Config.WANT_DEBUG) {
+    console.log(msg);	  
+  }	
+}
