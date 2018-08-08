@@ -1,7 +1,6 @@
-import F_Config from "./Config.js";
-import * as F_Common from "./Common.js";
+import * as TR_Debug from "./Debug.js";
 
-export default class TextCtx {
+export default class TxtRenderer {
   constructor(canvas_dom_elem, logical_width, logical_height) {
     this._ctx = canvas_dom_elem.getContext("2d");
     this._reset_font();
@@ -30,6 +29,21 @@ export default class TextCtx {
     window.addEventListener("orientationchange", (e) => {
       this._scale_to_current_window_dimensions();
     });
+  }
+
+  get width() {
+    return this._logical_width;	  
+  }
+
+  get height() {
+    return this._logical_height;	  
+  }
+
+  get_renderer_from_screen_coords(x, y) {
+    return [
+      parseInt(x / (this._x_scale * this._ch_width), 10),
+	  parseInt(y / (this._y_scale * this._ch_height), 10)
+	];
   }
 
   _reset_font() {
@@ -86,19 +100,19 @@ export default class TextCtx {
 
   set_ch(x, y, glyph, bg_color, fg_color) {
     if (x < 0) {
-	  F_Common.debug_breakpoint(`Invalid coordinates (${x}, ${y}): x must be >= 0`);	
+	  TR_Debug.breakpoint(`Invalid coordinates (${x}, ${y}): x must be >= 0`);	
 	  x = 0; 
 	} 
 	if (x >= this._logical_width) {
-	  F_Common.debug_breakpoint(`Invalid coordinates (${x}, ${y}): x must be < ${this._logical_width}`);	
+	  TR_Debug.breakpoint(`Invalid coordinates (${x}, ${y}): x must be < ${this._logical_width}`);	
 	  x = this._logical_width - 1;
 	} 
 	if (y < 0) {
-	  F_Common.debug_breakpoint(`Invalid coordinates (${x}, ${y}): y must be >= 0`);	
+	  TR_Debug.breakpoint(`Invalid coordinates (${x}, ${y}): y must be >= 0`);	
 	  y = 0;
 	} 
 	if (y >= this._logical_height) {
-	  F_Common.debug_breakpoint(`Invalid coordinates (${x}, ${y}): y must be < ${this._logical_height}`);	
+	  TR_Debug.breakpoint(`Invalid coordinates (${x}, ${y}): y must be < ${this._logical_height}`);	
 	  y = this._logical_height - 1;
 	} 
 
@@ -110,7 +124,7 @@ export default class TextCtx {
 
   set_str(x, y, str, bg_color, fg_color) {
     if (x + str.length - 1 >= this._logical_width) {
-	  F_Common.debug_breakpoint(`Text "${text}" drawn at (${x}, ${y}) exceeds canvas width`);
+	  TR_Debug.breakpoint(`Text "${text}" drawn at (${x}, ${y}) exceeds canvas width`);
 	  // canvas cuts off text by default
     }
 
