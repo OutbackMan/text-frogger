@@ -8,20 +8,11 @@ function start_sprite_editor(evt) {
   }); 
 }
 
-function create_static_label(x, y, txt, bg_color, fg_color) {
+function create_label(x, y, txt, bg_color, fg_color) {
   let label = Object.create(null);
-  label.x = x;
-  label.y = y;
   label.txt = txt;
   label.bg_color = bg_color;
   label.fg_color = fg_color;
-
-  return label;
-}
-
-function create_dynamic_label(x, y, txt, bg_color, fg_color) {
-  let label = create_static_label(x, y, txt, bg_color, fg_color);
-  label.is_active = false;
 
   return label;
 }
@@ -36,18 +27,23 @@ function sprite_editor_loop(frame_start_time, renderer) {
 
 
   let static_labels = create_static_labels();
-  let dynamic_labels = create_dynamic_labels();
+  let clickable_labels = create_clickable_labels();
 
   window.addEventListener("mouseenter", update_mouse_position);
   window.addEventListener("mousemove", update_mouse_position);
   // update_mouse_position => (evt) => x = evt.pageX, y = evt.pageY
+  
+  if (mouse_x) {
+	  
+  }
 
   window.addEventListener("click", (evt) => {
 	  
   });
   dynamic_labels.forEach((label) => {
-    label.  
+    renderer.set_str(label.x, label.y, label.txt, label.bg_color, label.fg_color);
   });
+
   let move_label = create_label(3, 4, "MOVE"); 
   let brush_label = create_label(3, 4, "MOVE"); 
   let erase_label = create_label(3, 4, "MOVE"); 
@@ -60,10 +56,6 @@ function sprite_editor_loop(frame_start_time, renderer) {
   let paste_label = create_label(3, 4, "MOVE"); 
   let output_label = create_label(3, 4, "MOVE"); 
   let load_label = create_label(3, 4, "MOVE"); 
-
-
-
-
 
 
   for (let y = 0; y < renderer.height; ++y) {

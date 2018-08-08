@@ -1,6 +1,13 @@
 import * as TR_Debug from "./Debug.js";
 
-export default class TxtRenderer {
+
+
+
+
+
+
+
+export default class TxtEngine {
   constructor(canvas_dom_elem, logical_width, logical_height) {
     this._ctx = canvas_dom_elem.getContext("2d");
     this._reset_font();
@@ -29,6 +36,31 @@ export default class TxtRenderer {
     window.addEventListener("orientationchange", (e) => {
       this._scale_to_current_window_dimensions();
     });
+
+    this.create();
+
+    window.requestAnimationFrame(this._update);
+  }
+
+  create() {
+    throw new Error("create() must be implemented by child class");	  
+  }
+
+  _update(frame_start_time) {
+    if (typeof this._update.when_last_frame === "undefined") {
+      this._update.when_last_frame = frame_start_time;
+    }
+
+    let time_between_frames = frame_start_time - this._update_loop.when_last_frame;
+    this._update_loop.when_last_frame = frame_start_time;
+
+    this.update(time_between_frames)
+
+	window.requestAnimationFrame(this._update);
+  }
+
+  update() {
+    throw new Error("update() must be implemented by child class");	  
   }
 
   get width() {
@@ -39,7 +71,8 @@ export default class TxtRenderer {
     return this._logical_height;	  
   }
 
-  get_renderer_from_screen_coords(x, y) {
+  // TODO(Ryan): Implementing own event system will negate the need for this
+  _get_renderer_from_screen_coords(x, y) {
     return [
       parseInt(x / (this._x_scale * this._ch_width), 10),
 	  parseInt(y / (this._y_scale * this._ch_height), 10)
@@ -98,7 +131,7 @@ export default class TxtRenderer {
     this._ctx.scale(this._x_scale, this._y_scale);
   }
 
-  set_ch(x, y, glyph, bg_color, fg_color) {
+  render_ch(x, y, glyph, bg_color, fg_color) {
     if (x < 0) {
 	  TR_Debug.breakpoint(`Invalid coordinates (${x}, ${y}): x must be >= 0`);	
 	  x = 0; 
@@ -122,7 +155,7 @@ export default class TxtRenderer {
     this._ch_buffer[ch_buf_index].fg_color = fg_color;
   }
 
-  set_str(x, y, str, bg_color, fg_color) {
+  render_str(x, y, str, bg_color, fg_color) {
     if (x + str.length - 1 >= this._logical_width) {
 	  TR_Debug.breakpoint(`Text "${text}" drawn at (${x}, ${y}) exceeds canvas width`);
 	  // canvas cuts off text by default
@@ -166,5 +199,4 @@ export default class TxtRenderer {
       this._ctx.fillText(row_str, 0, START_Y);
     }                                       
   }
-
 }
