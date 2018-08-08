@@ -1,11 +1,83 @@
 import * as TR_Debug from "./Debug.js";
 
 
+// TODO(Ryan): support gamepad and touch events
 
+// digital button, mouse
 
+class _InputHolder_DigitalBtn {
+  constructor() {
+    this.is_down = false;	  
+    this.is_pressed = false;	  
+    this.is_released = false;	  
+  }	
 
+  update(is_down) {
+    let btn_was_down = this.is_down;
+	this.is_down = is_down;
+	this.is_pressed = !btn_was_down && this.is_down;
+	this.is_released = btn_was_down && !this.is_down; 
+  }
+}
 
+class _InputHolder_Mouse {
+  constructor() {
+    this.left_btn = new _InputHolder_DigitalBtn();
+    this.right = new _InputHolder_DigitalBtn();
+	this.wheel = 0;
+	this.delta_wheel = 0;
+	this.position = [0, 0];
+	this.delta_position = 0;
+  }	
 
+  update(evt) {
+	  
+  }
+}
+
+class _TxtEngineInputHolder {
+  constructor(x_scale, y_scale) {
+	this._key_states = new Array(256);
+	this._prev_key_states = new Array(256);
+	for (let i = 0; i < 256; ++i) {
+	  this._key_states[i] = false;
+	  this._prev_key_states[i] = false;
+	} 
+
+	this._mouse_states = new Array(3);
+	this._prev_mouse_states = new Array(3);
+	for (let i = 0; i < 3; ++i) {
+	  this._mouse_states[i] = false;
+	  this._prev_mouse_states[i] = false;
+	} 
+    
+    window.addEventListener("mouseenter")
+    window.addEventListener("mousemove")
+	
+    window.addEventListener("mousedown")
+    window.addEventListener("mouseup")
+
+    window.addEventListener("keydown")
+    window.addEventListener("keyup")
+  } 
+
+  update() {
+	  
+  }
+
+  _handle_mouse_movement() {
+   
+  } 
+
+  _handle_mouse_click() {
+	  
+  } 
+
+  _handle_key_press(evt) {
+	 // evt.key gives the key string
+  } 
+
+}
 
 export default class TxtEngine {
   constructor(canvas_dom_elem, logical_width, logical_height) {
@@ -37,13 +109,14 @@ export default class TxtEngine {
       this._scale_to_current_window_dimensions();
     });
 
-    this.create();
+    this._input_holder = new _InputHolder(this._x_scale * this._ch_width, this._y_scale * this._ch_height);
 
-    window.requestAnimationFrame(this._update);
+    this._create();
   }
 
-  create() {
-    throw new Error("create() must be implemented by child class");	  
+  _create() {
+	this.create();
+	window.requestAnimationFrame(this._update);
   }
 
   _update(frame_start_time) {
@@ -56,11 +129,21 @@ export default class TxtEngine {
 
     this.update(time_between_frames)
 
+    this._input_holder.update();
+    
 	window.requestAnimationFrame(this._update);
+  }
+
+  create() {
+    throw new Error("create() must be implemented by child class");	  
   }
 
   update() {
     throw new Error("update() must be implemented by child class");	  
+  }
+
+  get input() {
+    return this._input_holder;	  
   }
 
   get width() {
