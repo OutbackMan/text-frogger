@@ -103,7 +103,7 @@ function initialize_server() {
   let max_players = 30;
 
   // could verify client here and set max payload
-  let server = new WS.Server({"host": "", "port": 80});
+  let server = new WS.Server({"host": "", "port": 80, "clientTracking": true});
   
   server.on("connection", (client) => {
     if (player_num < max_players) {
@@ -120,8 +120,24 @@ function initialize_server() {
   	});                                        
     
     client.on("message", (msg) => {
-    
+      // client.timeout = time.now()
+	  let msg_id = retrieve_id(msg);
+	  if (msg_id == 1) { // broadcast
+	    server.clients.forEach((client) => {
+		 if (cur_client) continue;
+		 client.send(msg);
+	    });
+	  }
+	  // if client quits, broadcast to all other players
+	  if (msg_id == 2) { // shot another player
+	    let shot_player_id = retrieve_player_id(msg);
+		server.clients[shot_player_id].send(msg);
+	  }
     });
+
+    server.clients.forEach((client) => {
+      if (time.now() - client.last_active > 5000) // broadcast disconnect;
+	});
   });
 
 }
