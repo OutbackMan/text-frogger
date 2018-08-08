@@ -5,13 +5,6 @@ import * as TR_Debug from "./Debug.js";
 
 // digital button, mouse
 
-class _InputHolder_DigitalBtn {
-  constructor() {
-    this.is_down = false;	  
-    this.is_pressed = false;	  
-    this.is_released = false;	  
-  }	
-
   update(is_down) {
     let btn_was_down = this.is_down;
 	this.is_down = is_down;
@@ -35,30 +28,77 @@ class _InputHolder_Mouse {
   }
 }
 
+let keys = ["Escape", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"];
+"PrintScreen", "ScrollLock", "Pause"
+"~","`", "1", "!", "2", '"', "3", "#", "4", "$", "5", "%", "6", "^", "7", "&", "8", "*", "9", "(", "0", ")", "-", "_", "=", "+"
+"Backspace", "Insert", "Home", "PageUp", 
+
+
+
 class _TxtEngineInputHolder {
   constructor(x_scale, y_scale) {
-	this._key_states = new Array(256);
-	this._prev_key_states = new Array(256);
-	for (let i = 0; i < 256; ++i) {
-	  this._key_states[i] = false;
-	  this._prev_key_states[i] = false;
-	} 
+	this._keys = Object.create(null);
+	this._mouse = Object.create(null);
 
-	this._mouse_states = new Array(3);
-	this._prev_mouse_states = new Array(3);
-	for (let i = 0; i < 3; ++i) {
-	  this._mouse_states[i] = false;
-	  this._prev_mouse_states[i] = false;
-	} 
+        let keys = new Proxy(this._keys, this._key_handler) 
+        let mouse = new Proxy(this._mouse, this._mouse_handler)
+
+        let _key_handler = Object.create(null);
+        _key_handler.get = (keys, key) => {
+          if !(key in keys) {
+            keys[key] = Object.create(null);
+            keys[key].is_down = false;
+            keys[key].is_pressed = false;
+            keys[key].is_released = false;
+            return false;
+          } else {
+            return keys[key];
+          }
+        }
+            
+  }
     
     window.addEventListener("mouseenter")
     window.addEventListener("mousemove")
 	
+    // mouse 3 buttons, scroll
+    window.addEventListener("click", (evt) => {
+    });
+    window.addEventListener("dblclick")
     window.addEventListener("mousedown")
     window.addEventListener("mouseup")
 
-    window.addEventListener("keydown")
-    window.addEventListener("keyup")
+    window.addEventListener("keypress", (evt) => {
+      if (typeof this._keys[evt.key] === "undefined") {
+        keys[evt.key] = Object.create(null);
+        keys[evt.key].is_down = false;
+        keys[evt.key].is_pressed = true;
+        keys[evt.key].is_released = false;
+      } else {
+        keys[evt.key].is_down = false;
+        keys[evt.key].is_pressed = true;
+        keys[evt.key].is_released = false;
+      }
+    });
+
+    window.addEventListener("keydown", (evt) => {
+      if (evt.preventDefault) {
+        return; 
+      }  
+
+      keys[evt.key].is_down = true;
+      keys[evt.key].is_pressed = false;
+      keys[evt.key].is_released = false;
+
+      evt.preventDefault();
+    });
+
+    window.addEventListener("keyup", (evt) => {
+      keys[evt.key].is_down = false;
+      keys[evt.key].is_pressed = false;
+      keys[evt.key].is_released = true;
+    });
+
   } 
 
   update() {
