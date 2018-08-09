@@ -28,7 +28,7 @@ class _InputHolder_Mouse {
   }
 }
 
-let keys = ["Escape", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"];
+let us_keys = ["Escape", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"];
 "PrintScreen", "ScrollLock", "Pause"
 "~","`", "1", "!", "2", '"', "3", "#", "4", "$", "5", "%", "6", "^", "7", "&", "8", "*", "9", "(", "0", ")", "-", "_", "=", "+"
 "Backspace", "Insert", "Home", "PageUp", 
@@ -37,66 +37,106 @@ let keys = ["Escape", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10
 
 class _TxtEngineInputHolder {
   constructor(x_scale, y_scale) {
-	this._keys = Object.create(null);
-	this._mouse = Object.create(null);
+	for (let key_index = 0; key_index < this._us_keys.length; ++key_index) {
+	  this.keys[this._us_keys[key_index]] = this._create_btn();
+	}
 
-        let keys = new Proxy(this._keys, this._key_handler) 
-        let mouse = new Proxy(this._mouse, this._mouse_handler)
+	this.mouse = Object.create(null);
+	this.mouse.left_btn = this._create_btn();
+	this.mouse.right_btn = this._create_btn();
+	this.mouse.scroll_btn = this._create_btn();
+	this.mouse.scroll_btn.delta = 0.0;
+	this.mouse.x = 0;
+	this.mouse.y = 0;
 
-        let _key_handler = Object.create(null);
-        _key_handler.get = (keys, key) => {
-          if !(key in keys) {
-            keys[key] = Object.create(null);
-            keys[key].is_down = false;
-            keys[key].is_pressed = false;
-            keys[key].is_released = false;
-            return false;
-          } else {
-            return keys[key];
-          }
-        }
-            
+    this.on_touch_device = (typeof window.orientation !== "undefined");
+
+    this.gamepad = Object.create(null);
+    this.gamepad.a_btn = this._create_btn();
+    this.gamepad.b_btn = this._create_btn();
+    x_button;
+    y_button;
+    struct Mu_AnalogButton left_trigger;
+    struct Mu_AnalogButton right_trigger;
+    struct Mu_DigitalButton left_shoulder_button;
+    struct Mu_DigitalButton right_shoulder_button;
+    struct Mu_DigitalButton up_button;
+    struct Mu_DigitalButton down_button;
+    struct Mu_DigitalButton left_button;
+    struct Mu_DigitalButton right_button;
+    struct Mu_Stick left_thumb_stick;
+    struct Mu_Stick right_thumb_stick;
+    struct Mu_DigitalButton left_thumb_button;
+    struct Mu_DigitalButton right_thumb_button;
+    struct Mu_DigitalButton back_button;
+    struct Mu_DigitalButton start_button;
   }
     
-    window.addEventListener("mouseenter")
-    window.addEventListener("mousemove")
-	
-    // mouse 3 buttons, scroll
-    window.addEventListener("click", (evt) => {
-    });
-    window.addEventListener("dblclick")
-    window.addEventListener("mousedown")
-    window.addEventListener("mouseup")
+  _create_btn() {
+	let btn = Object.create(null);
+	btn.is_down = false;
+	btn.is_pressed = false;
+	btn.is_released = false;
+	return btn;
+  }
 
-    window.addEventListener("keypress", (evt) => {
-      if (typeof this._keys[evt.key] === "undefined") {
-        keys[evt.key] = Object.create(null);
-        keys[evt.key].is_down = false;
-        keys[evt.key].is_pressed = true;
-        keys[evt.key].is_released = false;
-      } else {
-        keys[evt.key].is_down = false;
-        keys[evt.key].is_pressed = true;
-        keys[evt.key].is_released = false;
-      }
-    });
+    // require user interaction with the gamepad first
+    window.addEventListener("gamepadconnected", (evt));
 
-    window.addEventListener("keydown", (evt) => {
-      if (evt.preventDefault) {
+    window.onmouseenter = window.onmousemove = (evt) => {
+      if (evt.defaultPrevented) {
         return; 
       }  
 
-      keys[evt.key].is_down = true;
-      keys[evt.key].is_pressed = false;
-      keys[evt.key].is_released = false;
+	  this.mouse.x = evt.clientX; 	
+	  this.mouse.x = evt.clientY; 	
+
+      evt.preventDefault();
+	}
+
+    window.addEventListener("wheel")
+	
+    window.addEventListener("mousedown", (evt) => {
+		
+	});
+    window.addEventListener("mouseup", (evt) => {
+		
+	});
+
+    window.addEventListener("keypress", (evt) => {
+      if (evt.defaultPrevented) {
+        return; 
+      }  
+
+      this.keys[evt.key].is_down = false;
+      this.keys[evt.key].is_pressed = true;
+      this.keys[evt.key].is_released = false;
+
+      evt.preventDefault();
+    });
+
+    window.addEventListener("keydown", (evt) => {
+      if (evt.defaultPrevented) {
+        return; 
+      }  
+
+      this.keys[evt.key].is_down = true;
+      this.keys[evt.key].is_pressed = false;
+      this.keys[evt.key].is_released = false;
 
       evt.preventDefault();
     });
 
     window.addEventListener("keyup", (evt) => {
-      keys[evt.key].is_down = false;
-      keys[evt.key].is_pressed = false;
-      keys[evt.key].is_released = true;
+      if (evt.defaultPrevented) {
+        return; 
+      }  
+
+      this.keys[evt.key].is_down = false;
+      this.keys[evt.key].is_pressed = false;
+      this.keys[evt.key].is_released = true;
+
+      evt.preventDefault();
     });
 
   } 
