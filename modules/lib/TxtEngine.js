@@ -1,26 +1,9 @@
 import * as Debug from "../Debug.js";
 
-class _InputHolder_Mouse {
-  constructor() {
-    this.left_btn = new _InputHolder_DigitalBtn();
-    this.right = new _InputHolder_DigitalBtn();
-	this.wheel = 0;
-	this.delta_wheel = 0;
-	this.position = [0, 0];
-	this.delta_position = 0;
-  }	
-
-  update(evt) {
-	  
-  }
-}
-
 let us_keys = ["Escape", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"];
 "PrintScreen", "ScrollLock", "Pause"
 "~","`", "1", "!", "2", '"', "3", "#", "4", "$", "5", "%", "6", "^", "7", "&", "8", "*", "9", "(", "0", ")", "-", "_", "=", "+"
 "Backspace", "Insert", "Home", "PageUp", 
-
-
 
 class _TxtEngineInputHolder {
   constructor(x_scale, y_scale) {
@@ -28,21 +11,23 @@ class _TxtEngineInputHolder {
 	  this.keys[this._us_keys[key_index]] = this._create_btn();
 	}
 
-	this.mouse = Object.create(null);
-	this.mouse.left_btn = this._create_btn();
-	this.mouse.right_btn = this._create_btn();
-	this.mouse.scroll_btn = this._create_btn();
-	this.mouse.scroll_btn.delta = 0.0;
-	this.mouse.x = 0;
-	this.mouse.y = 0;
+	this.pointer = Object.create(null);
+	this.pointer.left_btn = this._create_btn();
+	this.pointer.right_btn = this._create_btn();
+	this.pointer.scroll_btn = this._create_btn();
+	// treat pinch zoom equivalent to scroll
+	this.pointer.scroll_btn.delta = 0.0;
+	this.pointer.x = 0;
+	this.pointer.y = 0;
+	this.is_scrolling = (this.pointer.delta_x !== 0 || this.pointer.delta_y !== 0);
 
     this.on_touch_device = (typeof window.orientation !== "undefined");
 
     this.gamepad = Object.create(null);
     this.gamepad.a_btn = this._create_btn();
     this.gamepad.b_btn = this._create_btn();
-    x_button;
-    y_button;
+    this.gamepad.x_button;
+    this.gamepad.y_button;
     struct Mu_AnalogButton left_trigger;
     struct Mu_AnalogButton right_trigger;
     struct Mu_DigitalButton left_shoulder_button;
@@ -67,61 +52,89 @@ class _TxtEngineInputHolder {
 	return btn;
   }
 
-    // require user interaction with the gamepad first
-    window.addEventListener("gamepadconnected", (evt));
+    // require user interaction with the gamepad to detect
+	// hold off until multiple controller support
+   window.ongamepadconnected = (evt) => {
+       (function(){})(); 
+   };
 
-    window.onpointerdown = (evt) => {
-	  if (evt.pointerType === "mouse") {
-	  } else {
-	    this._pointers_down.push(evt);	  
-	  }
+  window.onpointerup = (evt) => {
+    this.pointer.is_dragging = false;	  
+	if (evt.pointerType === "mouse") {
+	  this._update_btn(evt, false, false, true);
 	}
+	
+	  this.pointer.start_x = null;
+	  this.pointer.start_y = null;
+	  // remove event from cache
+
+	this._pointer_up_reset = setTimeout(() => {
+	}, 150);
+  }
+
+   window.onpointerdown = (evt) => {
+     this.pointer.is_dragging = true;
+     this.pointer.start_x = evt.clientX;
+     this.pointer.start_y = evt.clientY;
+
+     // for pinch zoom
+     this._pointers_down.push(evt);
+   }
 
     window.onpointermove = (evt) => {
       if (evt.defaultPrevented) {
         return; 
       }  
 
-      if (evt.pointerType === "mouse") {
-	    this.mouse.x = evt.clientX; 	
-	    this.mouse.x = evt.clientY; 	
-	  } else {
-        for (let i = 0; i < this._pointers_down.length; ++i) {
-	      if (evt.pointerId === this._pointers_down[i].pointerId) {
-		    this._pointers_down[i] = evt;	  
-			break;
-		  }		
-		}
+	  this.pointer.x = evt.clientX; 	
+	  this.pointer.y = evt.clientY; 	
 
-		if (this._pointers_down.length === 2) {
-	      let pointer_x_diff = Math.abs(this._pointers_down[0].clientX - this._pointers_down[1].clientX);		
-	      let pointer_y_diff = Math.abs(this._pointers_down[0].clientY - this._pointers_down[1].clientY);		
+      // update pinch zoom
+      for (let i = 0; i < this._pointers_down.length; ++i) {
+		if (this._pointers_down[i].pointerId === evt.pointerId) {
+          this._pointers_down[evt.pointerId] = evt;
 		}
-
-        this.touch.pinch_x_delta;
-        this.touch.pinch_y_delta;
-	  } 
+	  }
+	  
+	  if (this._pointers_down.length === 2) {
+	    this.pointer.delta_x = Math.abs(this._pointers_down[0].clientX - this._pointers_down[1].clientX);		
+	    this.pointer.delta_y = Math.abs(this._pointers_down[0].clientY - this._pointers_down[1].clientY);		
+	  }
 
       evt.preventDefault();
 	}
 
-    window.addEventListener("wheel")
+    // reset
+    window.onwheel = (evt) => { 
+	  this.pointer.delta_x = evt.deltaX;
+	  this.pointer.delta_y = evt.deltaY;
+	};
 
-    window.onkeypress = (evt) => this._update_btn(evt, false, true, false);
+    window.onkeypress = (evt) => this._update_btn(evt, true, false, false);
 
-    window.onkeydown = (evt) => this._update_btn(evt, true, false, false);
+    window.onkeydown = (evt) => this._update_btn(evt, false, true, false);
 
-    window.onkeyup = (evt) => this._update_btn(evt, false, false, true);
+    this._ex_reset = null;
+    window.onkeyup = function ex(evt) {
+	  this._update_btn(evt, false, false, true);
+	  if (this._ex_reset !== null) {
+	    clearTimeout(this._ex_reset);
+	  }
+
+	  this._ex_reset = setTimeout(() => {
+        this._update_btn(evt, false, false, false); 
+	  }, 150);
+	}
 
   } 
 
-  _update_btn(evt, is_down, is_pressed, is_released) {
+  _update_btn(evt, is_pressed, is_down, is_released) {
     if (evt.defaultPrevented) {
       return; 
     }  
 
-    this.keys[evt.key].is_down = is_down;
     this.keys[evt.key].is_pressed = is_pressed;
+    this.keys[evt.key].is_down = is_down;
     this.keys[evt.key].is_released = is_released;
     
 	evt.preventDefault();
