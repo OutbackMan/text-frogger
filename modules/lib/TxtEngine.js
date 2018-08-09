@@ -1,17 +1,4 @@
-import * as TR_Debug from "./Debug.js";
-
-
-// TODO(Ryan): support gamepad and touch events
-
-// digital button, mouse
-
-  update(is_down) {
-    let btn_was_down = this.is_down;
-	this.is_down = is_down;
-	this.is_pressed = !btn_was_down && this.is_down;
-	this.is_released = btn_was_down && !this.is_down; 
-  }
-}
+import * as Debug from "../Debug.js";
 
 class _InputHolder_Mouse {
   constructor() {
@@ -83,80 +70,62 @@ class _TxtEngineInputHolder {
     // require user interaction with the gamepad first
     window.addEventListener("gamepadconnected", (evt));
 
-    window.onmouseenter = window.onmousemove = (evt) => {
+    window.onpointerdown = (evt) => {
+	  if (evt.pointerType === "mouse") {
+	  } else {
+	    this._pointers_down.push(evt);	  
+	  }
+	}
+
+    window.onpointermove = (evt) => {
       if (evt.defaultPrevented) {
         return; 
       }  
 
-	  this.mouse.x = evt.clientX; 	
-	  this.mouse.x = evt.clientY; 	
+      if (evt.pointerType === "mouse") {
+	    this.mouse.x = evt.clientX; 	
+	    this.mouse.x = evt.clientY; 	
+	  } else {
+        for (let i = 0; i < this._pointers_down.length; ++i) {
+	      if (evt.pointerId === this._pointers_down[i].pointerId) {
+		    this._pointers_down[i] = evt;	  
+			break;
+		  }		
+		}
+
+		if (this._pointers_down.length === 2) {
+	      let pointer_x_diff = Math.abs(this._pointers_down[0].clientX - this._pointers_down[1].clientX);		
+	      let pointer_y_diff = Math.abs(this._pointers_down[0].clientY - this._pointers_down[1].clientY);		
+		}
+
+        this.touch.pinch_x_delta;
+        this.touch.pinch_y_delta;
+	  } 
 
       evt.preventDefault();
 	}
 
     window.addEventListener("wheel")
-	
-    window.addEventListener("mousedown", (evt) => {
-		
-	});
-    window.addEventListener("mouseup", (evt) => {
-		
-	});
 
-    window.addEventListener("keypress", (evt) => {
-      if (evt.defaultPrevented) {
-        return; 
-      }  
+    window.onkeypress = (evt) => this._update_btn(evt, false, true, false);
 
-      this.keys[evt.key].is_down = false;
-      this.keys[evt.key].is_pressed = true;
-      this.keys[evt.key].is_released = false;
+    window.onkeydown = (evt) => this._update_btn(evt, true, false, false);
 
-      evt.preventDefault();
-    });
-
-    window.addEventListener("keydown", (evt) => {
-      if (evt.defaultPrevented) {
-        return; 
-      }  
-
-      this.keys[evt.key].is_down = true;
-      this.keys[evt.key].is_pressed = false;
-      this.keys[evt.key].is_released = false;
-
-      evt.preventDefault();
-    });
-
-    window.addEventListener("keyup", (evt) => {
-      if (evt.defaultPrevented) {
-        return; 
-      }  
-
-      this.keys[evt.key].is_down = false;
-      this.keys[evt.key].is_pressed = false;
-      this.keys[evt.key].is_released = true;
-
-      evt.preventDefault();
-    });
+    window.onkeyup = (evt) => this._update_btn(evt, false, false, true);
 
   } 
 
-  update() {
-	  
+  _update_btn(evt, is_down, is_pressed, is_released) {
+    if (evt.defaultPrevented) {
+      return; 
+    }  
+
+    this.keys[evt.key].is_down = is_down;
+    this.keys[evt.key].is_pressed = is_pressed;
+    this.keys[evt.key].is_released = is_released;
+    
+	evt.preventDefault();
   }
-
-  _handle_mouse_movement() {
-   
-  } 
-
-  _handle_mouse_click() {
-	  
-  } 
-
-  _handle_key_press(evt) {
-	 // evt.key gives the key string
-  } 
-
 }
 
 export default class TxtEngine {
@@ -182,21 +151,14 @@ export default class TxtEngine {
 
     this._scale_to_current_window_dimensions();
 
-    window.addEventListener("resize", (e) => {
-      this._scale_to_current_window_dimensions();
-    });
-    window.addEventListener("orientationchange", (e) => {
+    window.onresize = window.onorientationchange = (evt) => {
       this._scale_to_current_window_dimensions();
     });
 
-    this._input_holder = new _InputHolder(this._x_scale * this._ch_width, this._y_scale * this._ch_height);
-
-    this._create();
   }
 
-  _create() {
-	this.create();
-	window.requestAnimationFrame(this._update);
+  start() {
+    window.requestAnimationFrame(this._update);	  
   }
 
   _update(frame_start_time) {
@@ -209,8 +171,8 @@ export default class TxtEngine {
 
     this.update(time_between_frames)
 
-    this._input_holder.update();
-    
+    this.render();
+
 	window.requestAnimationFrame(this._update);
   }
 
@@ -220,10 +182,6 @@ export default class TxtEngine {
 
   update() {
     throw new Error("update() must be implemented by child class");	  
-  }
-
-  get input() {
-    return this._input_holder;	  
   }
 
   get width() {

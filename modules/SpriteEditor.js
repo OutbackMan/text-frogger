@@ -1,12 +1,15 @@
-import TxtRenderer from "./modules/TxtRenderer.js";
+import TxtEngine from "./lib/TxtEngine.js";
 
-function start_sprite_editor(evt) {
-  let renderer = new TxtRenderer(document.querySelector("canvas"), 110, 66);
+export default class SpriteEditor extends TxtEngine {
+  constructor(canvas_dom_elem, width, height) {
+    super(canvas_dom_elem, width, height);
+  }	
 
-  window.requestAnimationFrame((frame_start_time) => {
-    sprite_editor_loop(frame_start_time, renderer); 
-  }); 
+  update() {
+    console.log("something");
+  }
 }
+
 
 function create_label(x, y, txt, bg_color, fg_color) {
   let label = Object.create(null);
@@ -69,9 +72,3 @@ function sprite_editor_loop(frame_start_time, renderer) {
 
   renderer.render();
 
-  window.requestAnimationFrame((start_time) => {
-    sprite_editor_loop(start_time, renderer); 
-  });
-}
-
-document.addEventListener("DOMContentLoaded", start_sprite_editor);
