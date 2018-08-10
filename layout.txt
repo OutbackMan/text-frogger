@@ -8,7 +8,7 @@
  y: 10000
                    .
                    .
- brush: #efefef    .
+ brush: #efefef x  .
  <output>          .
 
  
