@@ -4,7 +4,10 @@ function sprite_editor() {
   const SPRITE_EDITOR_INSTANCE = new SpriteEditor(
                                        document.querySelector(".SpriteEditor"),
 									   200,
-									   200
+									   200,
+                                                                           "black",
+                                                                           "white",
+                                                                           " "
 								 );
   SPRITE_EDITOR_INSTANCE.start();
 }

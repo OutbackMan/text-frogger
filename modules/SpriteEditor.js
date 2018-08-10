@@ -24,6 +24,13 @@ export default class SpriteEditor extends TxtEngine {
       "move":
 	}
 
+    // static, touchable (with hover), output, input
+          
+          // store sprites as .spr, but import as js file
+          // contains:
+          // let sprite_data = TypedArray(); 
+          // export { sprite_data as default };
+
     let brush_label = create_label(3, 4, "MOVE"); 
     let erase_label = create_label(3, 4, "MOVE"); 
     let zoom_in_label = create_label(3, 4, "MOVE"); 
@@ -35,6 +42,8 @@ export default class SpriteEditor extends TxtEngine {
     let paste_label = create_label(3, 4, "MOVE"); 
     let output_label = create_label(3, 4, "MOVE"); 
     let load_label = create_label(3, 4, "MOVE"); 
+    
+    width, height, width_plus, width_minus, 
   }	
 
   update(delta_time) {
@@ -53,7 +62,7 @@ export default class SpriteEditor extends TxtEngine {
   }
 
   _render_base_gui() {
-	  
+    	  
   }
 
   _create_touchable_label(x, y, txt, bg_color, fg_color, touch_callback) {
