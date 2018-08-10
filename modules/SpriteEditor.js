@@ -5,14 +5,24 @@ export default class SpriteEditor extends TxtEngine {
   constructor(canvas_dom_elem, width, height, default_bg, default_fg, default_ch) {
     super(canvas_dom_elem, width, height, default_bg, default_fg, default_ch);
 
-    let move_label = this._create_touchable_label(3, 4, "MOVE", "blue", "white", () => {
-	  if (!this.is_active) {
-	    document.body.style.cursor = "move";	  
-	    move_label.fg_color = Utils.darken(move_label.fg_color, 0.3);
-	  } else {
-	    this.is_active = true;	  
-	  }
-	}); 
+    this.active_tool = "move";
+
+    this.labels = {
+	  "move": this._create_touchable_label(3, 4, "MOVE", "blue", "white", () => {
+	            if (!this.is_active) {
+				  this.labels[this.active_tool].is_active = false;
+				  this.active_tool = "move";
+	              document.body.style.cursor = "move";	  
+	              move_label.fg_color = Utils.darken(move_label.fg_color, 0.3);
+	            } else {
+	              this.is_active = true;	  
+	            }
+	          }),
+	};
+
+    this.tools = {
+      "move":
+	}
 
     let brush_label = create_label(3, 4, "MOVE"); 
     let erase_label = create_label(3, 4, "MOVE"); 
@@ -36,6 +46,10 @@ export default class SpriteEditor extends TxtEngine {
 	    label.handle_touch();	  
 	  }
 	});
+
+    this.tools[this.active_tool].process_input();
+      
+    this.shortcuts.forEach()
   }
 
   _render_base_gui() {
