@@ -20,8 +20,8 @@ class _TxtEngineInputHandler {
 	this.pointer.x = 0;
 	this.pointer.y = 0;
 	this.pointer.touched = false;
-	this.pointer.delta_x = 0.0;
-	this.pointer.delta_y = 0.0;
+	this.pointer.pinch_delta_x = 0.0;
+	this.pointer.pinch_delta_y = 0.0;
 	this._pointers_down = [];
 	this._prev_pointers_x_distance = -1;
 	this._prev_pointers_y_distance = -1;
@@ -87,9 +87,9 @@ class _TxtEngineInputHandler {
       let delta_x = this._prev_pointers_x_distance / Math.abs(pointer_x_diff);
       let delta_y = this._prev_pointers_y_distance / Math.abs(pointer_y_diff);
 
-	  this.pointer.delta_x = (pointer_x_diff < this._prev_pointers_x_distance) ?
+	  this.pointer.pinch_delta_x = (pointer_x_diff < this._prev_pointers_x_distance) ?
 	                           (-1) * delta_x : delta_x;
-	  this.pointer.delta_y = (pointer_x_diff < this._prev_pointers_y_distance) ? 
+	  this.pointer.pinch_delta_y = (pointer_x_diff < this._prev_pointers_y_distance) ? 
 	                           (-1) * delta_y : delta_y;
 
       this._prev_pointers_x_distance = cur_x_distance;
@@ -166,7 +166,7 @@ class _TxtEngineInputHandler {
 }
 
 export default class TxtEngine {
-  constructor(canvas_dom_elem, logical_width, logical_height) {
+  constructor(canvas_dom_elem, logical_width, logical_height, default_bg_color, default_fg_color, default_glyph) {
     this._ctx = canvas_dom_elem.getContext("2d");
     this._reset_font();
 
@@ -181,9 +181,9 @@ export default class TxtEngine {
 	this._ch_buffer = new Array(logical_width * logical_height);
 	for (let i = 0; i < logical_width * logical_height; ++i) {
       this._ch_buffer[i] = Object.create(null);
-      this._ch_buffer[i].glyph = " ";
-      this._ch_buffer[i].bg_color = "white";
-      this._ch_buffer[i].fg_color = "black";
+      this._ch_buffer[i].glyph = default_glyph; 
+      this._ch_buffer[i].bg_color = default_bg_color; 
+      this._ch_buffer[i].fg_color = default_fg_color;
 	}
 
     this.on_touch_device = (typeof window.orientation !== "undefined");
@@ -216,11 +216,7 @@ export default class TxtEngine {
 	window.requestAnimationFrame(this._update);
   }
 
-  create() {
-    throw new Error("create() must be implemented by child class");	  
-  }
-
-  update() {
+  update(delta_time) {
     throw new Error("update() must be implemented by child class");	  
   }
 
