@@ -5,46 +5,25 @@ let us_keys = ["Escape", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "
 "~","`", "1", "!", "2", '"', "3", "#", "4", "$", "5", "%", "6", "^", "7", "&", "8", "*", "9", "(", "0", ")", "-", "_", "=", "+"
 "Backspace", "Insert", "Home", "PageUp", 
 
-class _TxtEngineInputHolder {
+class _TxtEngineInputHandler {
   constructor(x_scale, y_scale) {
 	for (let key_index = 0; key_index < this._us_keys.length; ++key_index) {
-	  this.keys[this._us_keys[key_index]] = this._create_btn();
+	  this.keys[this._us_keys[key_index]] = this._create_input_btn();
 	}
 
 	this.pointer = Object.create(null);
-	this.pointer.left_btn = this._create_btn();
-	this.pointer.right_btn = this._create_btn();
-	this.pointer.scroll_btn = this._create_btn();
-	// treat pinch zoom equivalent to scroll
+	this.pointer.left_btn = this._create_btn_holder();
+	this.pointer.right_btn = this._create_btn_holder();
+	this.pointer.scroll_btn = this._create_btn_holder();
 	this.pointer.scroll_btn.delta = 0.0;
 	this.pointer.x = 0;
 	this.pointer.y = 0;
-	this.is_scrolling = (this.pointer.delta_x !== 0 || this.pointer.delta_y !== 0);
-
-    this.on_touch_device = (typeof window.orientation !== "undefined");
-
-    this.gamepad = Object.create(null);
-    this.gamepad.a_btn = this._create_btn();
-    this.gamepad.b_btn = this._create_btn();
-    this.gamepad.x_button;
-    this.gamepad.y_button;
-    struct Mu_AnalogButton left_trigger;
-    struct Mu_AnalogButton right_trigger;
-    struct Mu_DigitalButton left_shoulder_button;
-    struct Mu_DigitalButton right_shoulder_button;
-    struct Mu_DigitalButton up_button;
-    struct Mu_DigitalButton down_button;
-    struct Mu_DigitalButton left_button;
-    struct Mu_DigitalButton right_button;
-    struct Mu_Stick left_thumb_stick;
-    struct Mu_Stick right_thumb_stick;
-    struct Mu_DigitalButton left_thumb_button;
-    struct Mu_DigitalButton right_thumb_button;
-    struct Mu_DigitalButton back_button;
-    struct Mu_DigitalButton start_button;
+	this._pointers_down = [];
+	this._prev_pointers_x_distance = -1;
+	this._prev_pointers_y_distance = -1;
   }
     
-  _create_btn() {
+  _create_btn_holder() {
 	let btn = Object.create(null);
 	btn.is_down = false;
 	btn.is_pressed = false;
@@ -52,21 +31,100 @@ class _TxtEngineInputHolder {
 	return btn;
   }
 
-    // require user interaction with the gamepad to detect
-	// hold off until multiple controller support
-   window.ongamepadconnected = (evt) => {
-       (function(){})(); 
-   };
+  _update_btn_holder(evt, is_pressed, is_down, is_released) {
+    if (evt.defaultPrevented) {
+      return; 
+    }  
+    let btn = this._get_input_btn_from_evt(evt); 
 
+    btn.is_pressed = is_pressed;
+    btn.is_down = is_down;
+    btn.is_released = is_released;
+     
+	evt.preventDefault();
+  }
+
+  _get_btn_holder_from_evt(evt) {
+    if (typeof evt.pointerId === "undefined") {
+      return this.keys[evt.key];
+	}
+
+    if (evt.button === 0) {
+	  return this.pointer.left_btn;
+	}
+	if (evt.button === 1) {
+	  return this.pointer.scroll_btn;
+	}
+	if (evt.button === 2) {
+	  return this.pointer.right_btn;
+	}
+  }
+
+  window.onpointermove = (evt) => {
+    if (evt.defaultPrevented) {
+      return; 
+    }  
+
+    this.pointer.x = evt.clientX; 	
+	this.pointer.y = evt.clientY; 	
+
+    for (let i = 0; i < this._pointers_down.length; ++i) {
+	  if (this._pointers_down[i].pointerId === evt.pointerId) {
+        this._pointers_down[evt.pointerId] = evt;
+	  }
+	}
+	  
+	if (this._pointers_down.length === 2) {
+      let pointer_x_diff = this._pointers_down[0].clientX -
+	                         this._pointers_down[1].clientX;
+      let pointer_y_diff = this._pointers_down[0].clientY -
+	                         this._pointers_down[1].clientY;
+
+      let delta_x = this._prev_pointers_x_distance / Math.abs(pointer_x_diff);
+      let delta_y = this._prev_pointers_y_distance / Math.abs(pointer_y_diff);
+
+	  this.pointer.delta_x = (pointer_x_diff < this._prev_pointers_x_distance) ?
+	                           (-1) * delta_x : delta_x;
+	  this.pointer.delta_y = (pointer_x_diff < this._prev_pointers_y_distance) ? 
+	                           (-1) * delta_y : delta_y;
+
+      this._prev_pointers_x_distance = cur_x_distance;
+      this._prev_pointers_y_distance = cur_y_distance;
+	}
+
+    evt.preventDefault();
+  }
+
+  window.onkeypress = (evt) => this._update_input_btn(evt, true, false, false);
+
+  window.onkeydown = (evt) => this._update_btn(evt, false, true, false);
+
+    this._keyup_reset = null;
+    window.onkeyup = function ex(evt) {
+	  this._update_btn(evt, false, false, true);
+	  if (this._keyup_reset !== null) {
+	    clearTimeout(this._keyup_reset);
+	  }
+
+	  this._keyup_reset = setTimeout(() => {
+        this._update_btn(evt, false, false, false); 
+	  }, 150);
+	}
+
+  this._pointerup_reset = null;
   window.onpointerup = (evt) => {
     this.pointer.is_dragging = false;	  
-	if (evt.pointerType === "mouse") {
-	  this._update_btn(evt, false, false, true);
-	}
+	this.pointer.start_x = null;
+	this.pointer.start_y = null;
+
+	this._update_btn(evt, false, false, true);
 	
-	  this.pointer.start_x = null;
-	  this.pointer.start_y = null;
-	  // remove event from cache
+    for (let i = 0; i < this._pointers_down.length; ++i) {
+	  if (this._pointers_down[i].pointerId === evt.pointerId) {
+          this._pointers_down.splice(i, 1);
+		  break;
+		}
+	  }
 
 	this._pointer_up_reset = setTimeout(() => {
 	}, 150);
@@ -77,68 +135,28 @@ class _TxtEngineInputHolder {
      this.pointer.start_x = evt.clientX;
      this.pointer.start_y = evt.clientY;
 
-     // for pinch zoom
      this._pointers_down.push(evt);
+	 this._update_btn(evt, false, true, false);
    }
 
-    window.onpointermove = (evt) => {
-      if (evt.defaultPrevented) {
-        return; 
-      }  
 
-	  this.pointer.x = evt.clientX; 	
-	  this.pointer.y = evt.clientY; 	
-
-      // update pinch zoom
-      for (let i = 0; i < this._pointers_down.length; ++i) {
-		if (this._pointers_down[i].pointerId === evt.pointerId) {
-          this._pointers_down[evt.pointerId] = evt;
-		}
-	  }
-	  
-	  if (this._pointers_down.length === 2) {
-	    this.pointer.delta_x = Math.abs(this._pointers_down[0].clientX - this._pointers_down[1].clientX);		
-	    this.pointer.delta_y = Math.abs(this._pointers_down[0].clientY - this._pointers_down[1].clientY);		
-	  }
-
-      evt.preventDefault();
-	}
-
-    // reset
+	this._wheel_reset = null;
     window.onwheel = (evt) => { 
 	  this.pointer.delta_x = evt.deltaX;
 	  this.pointer.delta_y = evt.deltaY;
-	};
 
-    window.onkeypress = (evt) => this._update_btn(evt, true, false, false);
-
-    window.onkeydown = (evt) => this._update_btn(evt, false, true, false);
-
-    this._ex_reset = null;
-    window.onkeyup = function ex(evt) {
-	  this._update_btn(evt, false, false, true);
-	  if (this._ex_reset !== null) {
-	    clearTimeout(this._ex_reset);
+	  if (this._wheel_reset !== null) {
+	    clearTimeout(this._wheel_reset);
 	  }
 
-	  this._ex_reset = setTimeout(() => {
+	  this._wheel_reset = setTimeout(() => {
         this._update_btn(evt, false, false, false); 
 	  }, 150);
-	}
+	};
+
 
   } 
 
-  _update_btn(evt, is_pressed, is_down, is_released) {
-    if (evt.defaultPrevented) {
-      return; 
-    }  
-
-    this.keys[evt.key].is_pressed = is_pressed;
-    this.keys[evt.key].is_down = is_down;
-    this.keys[evt.key].is_released = is_released;
-    
-	evt.preventDefault();
-  }
 }
 
 export default class TxtEngine {
@@ -162,12 +180,15 @@ export default class TxtEngine {
       this._ch_buffer[i].fg_color = "black";
 	}
 
+    this.on_touch_device = (typeof window.orientation !== "undefined");
+
     this._scale_to_current_window_dimensions();
 
     window.onresize = window.onorientationchange = (evt) => {
       this._scale_to_current_window_dimensions();
     });
 
+    this.input = new _TxtEngineInputHandler(this._x_scale * this._ch_width, this._y_scale * this._ch_height);
   }
 
   start() {
