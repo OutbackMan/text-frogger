@@ -127,7 +127,11 @@ class _TxtEngineInputHandler {
    }
 
    this._pointers_down.push(evt);
-   this._update_btn_holder(evt, false, true, false);
+   if (this.pointer.is_pressed === true) {
+     this._update_btn_holder(evt, false, true, false);
+   } else {
+     this._update_btn_holder(evt, true, false, false);
+   }
   };
 
   this._pointerup_reset = null;
