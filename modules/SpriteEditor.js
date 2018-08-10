@@ -52,6 +52,7 @@ export default class SpriteEditor extends TxtEngine {
     label.bg_color = bg_color;
     label.fg_color = fg_color;
 
+    // arrow functions necessary to preserve 'this'
     label.handle_hover = () => {
 	  if (this.input.pointer.x >= label.x && this.input.pointer.x < label.txt.length &&
 		this.input.pointer.y == label.y) {

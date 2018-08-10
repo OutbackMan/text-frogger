@@ -7,6 +7,9 @@ let us_keys = ["Escape", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "
 
 class _TxtEngineInputHandler {
   constructor(x_scale, y_scale) {
+    this._x_scale = x_scale;
+    this._y_scale = y_scale;
+
 	for (let key_index = 0; key_index < this._us_keys.length; ++key_index) {
 	  this.keys[this._us_keys[key_index]] = this._create_input_btn();
 	}
@@ -17,14 +20,16 @@ class _TxtEngineInputHandler {
 	this.pointer.scroll_btn = this._create_btn_holder();
 	this.pointer.scroll_btn.delta_x = 0.0;
 	this.pointer.scroll_btn.delta_y = 0.0;
+	this.pointer.drag_start_x = null;
+	this.pointer.drag_start_y = null;
 	this.pointer.x = 0;
 	this.pointer.y = 0;
 	this.pointer.touched = false;
 	this.pointer.pinch_delta_x = 0.0;
 	this.pointer.pinch_delta_y = 0.0;
 	this._pointers_down = [];
-	this._prev_pointers_x_distance = -1;
-	this._prev_pointers_y_distance = -1;
+	this._prev_pointers_x_distance = 0;
+	this._prev_pointers_y_distance = 0;
   }
     
   _create_btn_holder() {
@@ -69,12 +74,13 @@ class _TxtEngineInputHandler {
       return; 
     }  
 
-    this.pointer.x = evt.clientX; 	
-	this.pointer.y = evt.clientY; 	
+    this.pointer.x = evt.clientX / this.x_scale; 	
+	this.pointer.y = evt.clientY / this.y_scale; 	
 
     for (let i = 0; i < this._pointers_down.length; ++i) {
 	  if (this._pointers_down[i].pointerId === evt.pointerId) {
-        this._pointers_down[evt.pointerId] = evt;
+        this._pointers_down[i] = evt;
+		break;
 	  }
 	}
 	  
@@ -97,14 +103,14 @@ class _TxtEngineInputHandler {
 	}
 
     evt.preventDefault();
-  }
+  };
 
   window.onkeypress = (evt) => this._update_btn_holder(evt, true, false, false);
 
   window.onkeydown = (evt) => this._update_btn_holder(evt, false, true, false);
 
   this._keyup_reset = null;
-  window.onkeyup = function ex(evt) {
+  window.onkeyup = (evt) => {
     this._update_btn_holder(evt, false, false, true);
 	if (this._keyup_reset !== null) {
 	  clearTimeout(this._keyup_reset);
@@ -112,24 +118,26 @@ class _TxtEngineInputHandler {
 	this._keyup_reset = setTimeout(() => {
       this._update_btn_holder(evt, false, false, false); 
 	}, 150);
-  }
+  };
 
   window.onpointerdown = (evt) => {
-   this.pointer.is_dragging = true;
-   this.pointer.start_x = evt.clientX;
-   this.pointer.start_y = evt.clientY;
+   if (this.pointer.drag_start_x === null || this.pointer.drag_start_y === null) {
+     this.pointer.drag_start_x = evt.clientX / this.x_scale;
+     this.pointer.drag_start_y = evt.clientX / this.y_scale;
+   }
 
    this._pointers_down.push(evt);
    this._update_btn_holder(evt, false, true, false);
-  }
+  };
 
   this._pointerup_reset = null;
   window.onpointerup = (evt) => {
-    this.pointer.is_dragging = false;	  
-	this.pointer.start_x = null;
-	this.pointer.start_y = null;
-	this.pointer.delta_x = 0;
-	this.pointer.delta_y = 0;
+	this.pointer.drag_start_x = null;
+	this.pointer.drag_start_y = null;
+	this.pointer.pinch_delta_x = 0.0;
+	this.pointer.pinch_delta_y = 0.0;
+	this._prev_pointers_x_distance = 0;
+	this._prev_pointers_y_distance = 0;
 
 	this._update_btn_holder(evt, false, false, true);
 	
@@ -138,30 +146,39 @@ class _TxtEngineInputHandler {
           this._pointers_down.splice(i, 1);
 		  break;
 		}
-	  }
+	}
 
-	this._pointer_up_reset = setTimeout(() => {
+	if (this._pointerup_reset !== null) {
+	  clearTimeout(this._pointerup_reset);
+	}
+	this._pointerup_reset = setTimeout(() => {
 	  this._update_btn_holder(evt, false, false, false);
 	}, 150);
-  }
+  };
 
-  this._ontouch_reset = null;
+  this._touched_reset = null;
   window.onclick = window.onpointerleave = (evt) => {
     this.pointer.touched = true;
-  }
+	if (this._touched_reset !== null) {
+	  clearTimeout(this._touched_reset);
+	}
+	this._touched_reset = setTimeout(() => {
+      this._update_btn_holder(evt, false, false, false); 
+	}, 150);
+  };
 
   this._wheel_reset = null;
   window.onwheel = (evt) => { 
-	  this.pointer.delta_x = evt.deltaX;
-	  this.pointer.delta_y = evt.deltaY;
+    this.pointer.delta_x = evt.deltaX;
+    this.pointer.delta_y = evt.deltaY;
 
-	  if (this._wheel_reset !== null) {
-	    clearTimeout(this._wheel_reset);
-	  }
-
-	  this._wheel_reset = setTimeout(() => {
-        this._update_btn(evt, false, false, false); 
-	  }, 150);
+    if (this._wheel_reset !== null) {
+	  clearTimeout(this._wheel_reset);
+	}
+	this._wheel_reset = setTimeout(() => {
+      this.pointer.delta_x = 0.0;
+      this.pointer.delta_y = 0.0;
+	}, 150);
   };
 }
 
@@ -226,14 +243,6 @@ export default class TxtEngine {
 
   get height() {
     return this._logical_height;	  
-  }
-
-  // TODO(Ryan): Implementing own event system will negate the need for this
-  _get_renderer_from_screen_coords(x, y) {
-    return [
-      parseInt(x / (this._x_scale * this._ch_width), 10),
-	  parseInt(y / (this._y_scale * this._ch_height), 10)
-	];
   }
 
   _reset_font() {
