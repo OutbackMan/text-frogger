@@ -1,14 +1,24 @@
 import * as Debug from "../Debug.js";
 
-let us_keys = ["Escape", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"];
-"PrintScreen", "ScrollLock", "Pause"
-"~","`", "1", "!", "2", '"', "3", "#", "4", "$", "5", "%", "6", "^", "7", "&", "8", "*", "9", "(", "0", ")", "-", "_", "=", "+"
-"Backspace", "Insert", "Home", "PageUp", 
-
 class _TxtEngineInputHandler {
   constructor(x_scale, y_scale) {
     this._x_scale = x_scale;
     this._y_scale = y_scale;
+
+    this._us_keys = ["Escape", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", 
+                      "F9", "F10", "F11", "F12", "~","`", "1", "!", "2", "'", 
+                      "3", "#", "4", "$", "5", "%", "6", "^", "7", "&", "8", 
+                      "*", "9", "(", "0", ")", "-", "_", "=", "+", "Backspace",
+                      "Insert", "Home", "PageUp", "NumLock", "/", "Tab", "q", 
+                      "w", "e", "r", "t", "y", "u", "i", "o", "p", "a", "s", 
+                      "d", "f", "g", "h", "j", "k", "l", "z", "x", "c", "v", 
+                      "b", "n", "m", "Q", "W", "E", "R", "T", "Y", "U", "I", 
+                      "O", "P", "A", "S", "D", "F", "G", "H", "J", "K", "L", 
+                      "Z", "X", "C", "V", "B", "N", "M", "{", "[", "}", "]", 
+                      "Enter", "Delete", "End", "PageDown", "CapsLock", ":", 
+                      ";", '"', "\\", "|", "Shift", "<", ",", ">", ".", "?", 
+                      "Control", "Meta", "Alt", "Spacebar", "ContextMenu", 
+                      "ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp"];
 
 	for (let key_index = 0; key_index < this._us_keys.length; ++key_index) {
 	  this.keys[this._us_keys[key_index]] = this._create_input_btn();
@@ -44,7 +54,7 @@ class _TxtEngineInputHandler {
     if (evt.defaultPrevented) {
       return; 
     }  
-    let btn = this._get_input_btn_from_evt(evt); 
+    let btn = this._get_btn_holder_from_evt(evt); 
 
     btn.is_pressed = is_pressed;
     btn.is_down = is_down;
