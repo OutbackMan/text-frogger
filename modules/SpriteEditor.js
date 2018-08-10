@@ -1,10 +1,19 @@
 import TxtEngine from "./lib/TxtEngine.js";
+import * as Utils from "./Utils.js";
 
 export default class SpriteEditor extends TxtEngine {
   constructor(canvas_dom_elem, width, height, default_bg, default_fg, default_ch) {
     super(canvas_dom_elem, width, height, default_bg, default_fg, default_ch);
 
-    let move_label = create_label(3, 4, "MOVE"); 
+    let move_label = this._create_touchable_label(3, 4, "MOVE", "blue", "white", () => {
+	  if (!this.is_active) {
+	    document.body.style.cursor = "move";	  
+	    move_label.fg_color = Utils.darken(move_label.fg_color, 0.3);
+	  } else {
+	    this.is_active = true;	  
+	  }
+	}); 
+
     let brush_label = create_label(3, 4, "MOVE"); 
     let erase_label = create_label(3, 4, "MOVE"); 
     let zoom_in_label = create_label(3, 4, "MOVE"); 
@@ -16,7 +25,6 @@ export default class SpriteEditor extends TxtEngine {
     let paste_label = create_label(3, 4, "MOVE"); 
     let output_label = create_label(3, 4, "MOVE"); 
     let load_label = create_label(3, 4, "MOVE"); 
-
   }	
 
   update(delta_time) {
@@ -36,6 +44,7 @@ export default class SpriteEditor extends TxtEngine {
 
   _create_touchable_label(x, y, txt, bg_color, fg_color, touch_callback) {
     let label = this._create_static_label(x, y, txt, bg_color, fg_color);
+	label.is_active = false;
 	label.handle_touch = () => {
       if (this.input.pointer.has_touched) {
 		if (this.input.pointer.x >= label.x && this.input.pointer.x < label.txt.length &&
@@ -55,8 +64,8 @@ export default class SpriteEditor extends TxtEngine {
     // arrow functions necessary to preserve 'this'
     label.handle_hover = () => {
 	  if (this.input.pointer.x >= label.x && this.input.pointer.x < label.txt.length &&
-		this.input.pointer.y == label.y) {
-	     this.render_str(label.x, label.y, lighten(label.bg_color, 0.3), lighten(label.fg_color, 0.3));
+		this.input.pointer.y === label.y) {
+	     this.render_str(label.x, label.y, Utils.lighten(label.bg_color, 0.3), Utils.lighten(label.fg_color, 0.3), txt);
 	  }
 	};
 
