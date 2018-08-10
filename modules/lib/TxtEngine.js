@@ -15,9 +15,13 @@ class _TxtEngineInputHandler {
 	this.pointer.left_btn = this._create_btn_holder();
 	this.pointer.right_btn = this._create_btn_holder();
 	this.pointer.scroll_btn = this._create_btn_holder();
-	this.pointer.scroll_btn.delta = 0.0;
+	this.pointer.scroll_btn.delta_x = 0.0;
+	this.pointer.scroll_btn.delta_y = 0.0;
 	this.pointer.x = 0;
 	this.pointer.y = 0;
+	this.pointer.touched = false;
+	this.pointer.delta_x = 0.0;
+	this.pointer.delta_y = 0.0;
 	this._pointers_down = [];
 	this._prev_pointers_x_distance = -1;
 	this._prev_pointers_y_distance = -1;
@@ -95,29 +99,39 @@ class _TxtEngineInputHandler {
     evt.preventDefault();
   }
 
-  window.onkeypress = (evt) => this._update_input_btn(evt, true, false, false);
+  window.onkeypress = (evt) => this._update_btn_holder(evt, true, false, false);
 
-  window.onkeydown = (evt) => this._update_btn(evt, false, true, false);
+  window.onkeydown = (evt) => this._update_btn_holder(evt, false, true, false);
 
-    this._keyup_reset = null;
-    window.onkeyup = function ex(evt) {
-	  this._update_btn(evt, false, false, true);
-	  if (this._keyup_reset !== null) {
-	    clearTimeout(this._keyup_reset);
-	  }
-
-	  this._keyup_reset = setTimeout(() => {
-        this._update_btn(evt, false, false, false); 
-	  }, 150);
+  this._keyup_reset = null;
+  window.onkeyup = function ex(evt) {
+    this._update_btn_holder(evt, false, false, true);
+	if (this._keyup_reset !== null) {
+	  clearTimeout(this._keyup_reset);
 	}
+	this._keyup_reset = setTimeout(() => {
+      this._update_btn_holder(evt, false, false, false); 
+	}, 150);
+  }
+
+  window.onpointerdown = (evt) => {
+   this.pointer.is_dragging = true;
+   this.pointer.start_x = evt.clientX;
+   this.pointer.start_y = evt.clientY;
+
+   this._pointers_down.push(evt);
+   this._update_btn_holder(evt, false, true, false);
+  }
 
   this._pointerup_reset = null;
   window.onpointerup = (evt) => {
     this.pointer.is_dragging = false;	  
 	this.pointer.start_x = null;
 	this.pointer.start_y = null;
+	this.pointer.delta_x = 0;
+	this.pointer.delta_y = 0;
 
-	this._update_btn(evt, false, false, true);
+	this._update_btn_holder(evt, false, false, true);
 	
     for (let i = 0; i < this._pointers_down.length; ++i) {
 	  if (this._pointers_down[i].pointerId === evt.pointerId) {
@@ -127,21 +141,17 @@ class _TxtEngineInputHandler {
 	  }
 
 	this._pointer_up_reset = setTimeout(() => {
+	  this._update_btn_holder(evt, false, false, false);
 	}, 150);
   }
 
-   window.onpointerdown = (evt) => {
-     this.pointer.is_dragging = true;
-     this.pointer.start_x = evt.clientX;
-     this.pointer.start_y = evt.clientY;
+  this._ontouch_reset = null;
+  window.onclick = window.onpointerleave = (evt) => {
+    this.pointer.touched = true;
+  }
 
-     this._pointers_down.push(evt);
-	 this._update_btn(evt, false, true, false);
-   }
-
-
-	this._wheel_reset = null;
-    window.onwheel = (evt) => { 
+  this._wheel_reset = null;
+  window.onwheel = (evt) => { 
 	  this.pointer.delta_x = evt.deltaX;
 	  this.pointer.delta_y = evt.deltaY;
 
@@ -152,11 +162,7 @@ class _TxtEngineInputHandler {
 	  this._wheel_reset = setTimeout(() => {
         this._update_btn(evt, false, false, false); 
 	  }, 150);
-	};
-
-
-  } 
-
+  };
 }
 
 export default class TxtEngine {
