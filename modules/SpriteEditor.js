@@ -1,6 +1,76 @@
 import TxtEngine from "./lib/TxtEngine.js";
 import * as Utils from "./Utils.js";
 
+class Label {
+  constructor(x, y, txt, bg_color, fg_color) {
+    this.x = x;
+    this.y = y;
+    this.txt = txt;
+    this.bg_color = bg_color;
+    this.fg_color = fg_color;
+  }
+  
+  update_and_render() {
+    this.render_str(); 
+  }
+}
+
+class VariableLabel extends Label {
+        // must be arr to be passed by reference
+  constructor(x, y, txt, bg_color, fg_color, variable_arr) {
+    super(x, y, txt, bg_color, fg_color);
+    this.variable_arr = variable_arr;
+  }
+
+  update() {
+    let output_str = `${this.txt}: ${this.variable_arr[0]}`;
+    this.render_str();
+  }
+}
+
+class InputLabel extends Label {
+  constructor(x, y, txt, bg_color, fg_color, max_width) {
+    super(x, y, txt, bg_color, fg_color);
+    this.content = new Array(max_width);
+  }
+
+  get content() {
+    return this.content.join(""); 
+  }
+
+  update() {
+    if (this.input.x = )
+    let output_str = `${this.txt}: ${this.content.join("")}`;
+    this.render_str();
+  }
+  
+}
+
+class TouchableLabel extends Label {
+  constructor(x, y, txt, bg_color, fg_color, max_width) {
+    super(x, y, txt, bg_color, fg_color);
+    this.is_active = false;
+  }
+
+  update() {
+    if (!this.is_active) {
+      if (this.input.pointer.has_touched && this.input.pointer.x >= this.x && this.input.pointer.x < this.txt.length + this.max_width && this.input.pointer.y === this.y) {
+        this.is_active = true; 
+      }
+    } else {
+       
+    }
+  }
+
+  // when has been deactivated
+  reset() {
+  
+  }
+}
+
+
+
+
 export default class SpriteEditor extends TxtEngine {
   constructor(canvas_dom_elem, width, height, default_bg, default_fg, default_ch) {
     super(canvas_dom_elem, width, height, default_bg, default_fg, default_ch);
@@ -24,8 +94,6 @@ export default class SpriteEditor extends TxtEngine {
       "move":
 	}
 
-    // static, touchable (with hover), output, input
-          
           // store sprites as .spr, but import as js file
           // contains:
           // let sprite_data = TypedArray(); 
@@ -50,10 +118,7 @@ export default class SpriteEditor extends TxtEngine {
 	this._render_base_gui();
     
 	this.labels.forEach((label) => {
-	  label.handle_hover();
-      if (typeof label.handle_touch !== "undefined") {
-	    label.handle_touch();	  
-	  }
+          label.update_and_render();
 	});
 
     this.tools[this.active_tool].process_input();
