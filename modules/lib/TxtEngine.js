@@ -20,8 +20,9 @@ class _TxtEngineInputHandler {
                       "Control", "Meta", "Alt", "Spacebar", "ContextMenu", 
                       "ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp"];
 
+    this.keys = Object.create(null); 
 	for (let key_index = 0; key_index < this._us_keys.length; ++key_index) {
-	  this.keys[this._us_keys[key_index]] = this._create_input_btn();
+	  this.keys[this._us_keys[key_index]] = this._create_btn_holder();
 	}
 
 	this.pointer = Object.create(null);
@@ -40,6 +41,122 @@ class _TxtEngineInputHandler {
 	this._pointers_down = [];
 	this._prev_pointers_x_distance = 0;
 	this._prev_pointers_y_distance = 0;
+
+    window.onpointermove = (evt) => {
+      if (evt.defaultPrevented) {
+        return; 
+      }  
+  
+      this.pointer.x = evt.clientX / this.x_scale; 	
+  	  this.pointer.y = evt.clientY / this.y_scale; 	
+  
+      for (let i = 0; i < this._pointers_down.length; ++i) {
+  	    if (this._pointers_down[i].pointerId === evt.pointerId) {
+          this._pointers_down[i] = evt;
+  		  break;
+  	    }
+  	  }
+  	  
+  	  if (this._pointers_down.length === 2) {
+        let pointer_x_diff = this._pointers_down[0].clientX -
+	                           this._pointers_down[1].clientX;
+        let pointer_y_diff = this._pointers_down[0].clientY -
+	                           this._pointers_down[1].clientY;
+
+        let delta_x = this._prev_pointers_x_distance / Math.abs(pointer_x_diff);
+        let delta_y = this._prev_pointers_y_distance / Math.abs(pointer_y_diff);
+
+	    this.pointer.pinch_delta_x = (pointer_x_diff < this._prev_pointers_x_distance) ?
+	                             (-1) * delta_x : delta_x;
+	    this.pointer.pinch_delta_y = (pointer_x_diff < this._prev_pointers_y_distance) ? 
+	                             (-1) * delta_y : delta_y;
+
+        this._prev_pointers_x_distance = cur_x_distance;
+        this._prev_pointers_y_distance = cur_y_distance;
+	  }
+
+      evt.preventDefault();
+    };
+
+    window.onkeypress = (evt) => this._update_btn_holder(evt, true, false, false);
+
+    window.onkeydown = (evt) => this._update_btn_holder(evt, false, true, false);
+
+    this._keyup_reset = null;
+    window.onkeyup = (evt) => {
+      this._update_btn_holder(evt, false, false, true);
+	  if (this._keyup_reset !== null) {
+	    clearTimeout(this._keyup_reset);
+	  }
+	  this._keyup_reset = setTimeout(() => {
+        this._update_btn_holder(evt, false, false, false); 
+	  }, 150);
+    };
+
+    window.onpointerdown = (evt) => {
+      if (this.pointer.drag_start_x === null || this.pointer.drag_start_y === null) {
+        this.pointer.drag_start_x = evt.clientX / this.x_scale;
+        this.pointer.drag_start_y = evt.clientX / this.y_scale;
+      }
+
+      this._pointers_down.push(evt);
+      if (this.pointer.is_pressed === true) {
+        this._update_btn_holder(evt, false, true, false);
+      } else {
+        this._update_btn_holder(evt, true, false, false);
+      }
+    };
+
+    this._pointerup_reset = null;
+    window.onpointerup = (evt) => {
+	  this.pointer.drag_start_x = null;
+	  this.pointer.drag_start_y = null;
+	  this.pointer.pinch_delta_x = 0.0;
+	  this.pointer.pinch_delta_y = 0.0;
+	  this._prev_pointers_x_distance = 0;
+	  this._prev_pointers_y_distance = 0;
+
+	  this._update_btn_holder(evt, false, false, true);
+	  
+      for (let i = 0; i < this._pointers_down.length; ++i) {
+	    if (this._pointers_down[i].pointerId === evt.pointerId) {
+            this._pointers_down.splice(i, 1);
+	  	  break;
+	  	}
+	  }
+
+	  if (this._pointerup_reset !== null) {
+	    clearTimeout(this._pointerup_reset);
+	  }
+	  this._pointerup_reset = setTimeout(() => {
+	    this._update_btn_holder(evt, false, false, false);
+	  }, 150);
+    };
+
+    this._touched_reset = null;
+    window.onclick = window.onpointerleave = (evt) => {
+      this.pointer.touched = true;
+      if (this._touched_reset !== null) {
+        clearTimeout(this._touched_reset);
+      }
+      this._touched_reset = setTimeout(() => {
+        this._update_btn_holder(evt, false, false, false); 
+      }, 150);
+    };
+
+    this._wheel_reset = null;
+    window.onwheel = (evt) => { 
+      this.pointer.delta_x = evt.deltaX;
+      this.pointer.delta_y = evt.deltaY;
+
+      if (this._wheel_reset !== null) {
+        clearTimeout(this._wheel_reset);
+      }
+      this._wheel_reset = setTimeout(() => {
+        this.pointer.delta_x = 0.0;
+        this.pointer.delta_y = 0.0;
+      }, 150);
+    };
   }
     
   _create_btn_holder() {
@@ -79,121 +196,6 @@ class _TxtEngineInputHandler {
 	}
   }
 
-  window.onpointermove = (evt) => {
-    if (evt.defaultPrevented) {
-      return; 
-    }  
-
-    this.pointer.x = evt.clientX / this.x_scale; 	
-	this.pointer.y = evt.clientY / this.y_scale; 	
-
-    for (let i = 0; i < this._pointers_down.length; ++i) {
-	  if (this._pointers_down[i].pointerId === evt.pointerId) {
-        this._pointers_down[i] = evt;
-		break;
-	  }
-	}
-	  
-	if (this._pointers_down.length === 2) {
-      let pointer_x_diff = this._pointers_down[0].clientX -
-	                         this._pointers_down[1].clientX;
-      let pointer_y_diff = this._pointers_down[0].clientY -
-	                         this._pointers_down[1].clientY;
-
-      let delta_x = this._prev_pointers_x_distance / Math.abs(pointer_x_diff);
-      let delta_y = this._prev_pointers_y_distance / Math.abs(pointer_y_diff);
-
-	  this.pointer.pinch_delta_x = (pointer_x_diff < this._prev_pointers_x_distance) ?
-	                           (-1) * delta_x : delta_x;
-	  this.pointer.pinch_delta_y = (pointer_x_diff < this._prev_pointers_y_distance) ? 
-	                           (-1) * delta_y : delta_y;
-
-      this._prev_pointers_x_distance = cur_x_distance;
-      this._prev_pointers_y_distance = cur_y_distance;
-	}
-
-    evt.preventDefault();
-  };
-
-  window.onkeypress = (evt) => this._update_btn_holder(evt, true, false, false);
-
-  window.onkeydown = (evt) => this._update_btn_holder(evt, false, true, false);
-
-  this._keyup_reset = null;
-  window.onkeyup = (evt) => {
-    this._update_btn_holder(evt, false, false, true);
-	if (this._keyup_reset !== null) {
-	  clearTimeout(this._keyup_reset);
-	}
-	this._keyup_reset = setTimeout(() => {
-      this._update_btn_holder(evt, false, false, false); 
-	}, 150);
-  };
-
-  window.onpointerdown = (evt) => {
-   if (this.pointer.drag_start_x === null || this.pointer.drag_start_y === null) {
-     this.pointer.drag_start_x = evt.clientX / this.x_scale;
-     this.pointer.drag_start_y = evt.clientX / this.y_scale;
-   }
-
-   this._pointers_down.push(evt);
-   if (this.pointer.is_pressed === true) {
-     this._update_btn_holder(evt, false, true, false);
-   } else {
-     this._update_btn_holder(evt, true, false, false);
-   }
-  };
-
-  this._pointerup_reset = null;
-  window.onpointerup = (evt) => {
-	this.pointer.drag_start_x = null;
-	this.pointer.drag_start_y = null;
-	this.pointer.pinch_delta_x = 0.0;
-	this.pointer.pinch_delta_y = 0.0;
-	this._prev_pointers_x_distance = 0;
-	this._prev_pointers_y_distance = 0;
-
-	this._update_btn_holder(evt, false, false, true);
-	
-    for (let i = 0; i < this._pointers_down.length; ++i) {
-	  if (this._pointers_down[i].pointerId === evt.pointerId) {
-          this._pointers_down.splice(i, 1);
-		  break;
-		}
-	}
-
-	if (this._pointerup_reset !== null) {
-	  clearTimeout(this._pointerup_reset);
-	}
-	this._pointerup_reset = setTimeout(() => {
-	  this._update_btn_holder(evt, false, false, false);
-	}, 150);
-  };
-
-  this._touched_reset = null;
-  window.onclick = window.onpointerleave = (evt) => {
-    this.pointer.touched = true;
-	if (this._touched_reset !== null) {
-	  clearTimeout(this._touched_reset);
-	}
-	this._touched_reset = setTimeout(() => {
-      this._update_btn_holder(evt, false, false, false); 
-	}, 150);
-  };
-
-  this._wheel_reset = null;
-  window.onwheel = (evt) => { 
-    this.pointer.delta_x = evt.deltaX;
-    this.pointer.delta_y = evt.deltaY;
-
-    if (this._wheel_reset !== null) {
-	  clearTimeout(this._wheel_reset);
-	}
-	this._wheel_reset = setTimeout(() => {
-      this.pointer.delta_x = 0.0;
-      this.pointer.delta_y = 0.0;
-	}, 150);
-  };
 }
 
 export default class TxtEngine {
@@ -223,28 +225,28 @@ export default class TxtEngine {
 
     window.onresize = window.onorientationchange = (evt) => {
       this._scale_to_current_window_dimensions();
-    });
+    };
+
+    this.when_last_update_frame = window.performance.now();
 
     this.input = new _TxtEngineInputHandler(this._x_scale * this._ch_width, this._y_scale * this._ch_height);
   }
 
   start() {
-    window.requestAnimationFrame(this._update);	  
+	/* NOTE(Ryan): The value of 'this' must be binded when used as a funcref
+	*/
+    window.requestAnimationFrame((start_time) => { this._update(start_time) });	  
   }
 
   _update(frame_start_time) {
-    if (typeof this._update.when_last_frame === "undefined") {
-      this._update.when_last_frame = frame_start_time;
-    }
-
-    let time_between_frames = frame_start_time - this._update_loop.when_last_frame;
-    this._update_loop.when_last_frame = frame_start_time;
+    let time_between_frames = frame_start_time - this.when_last_update_frame;
+    this.when_last_update_frame = frame_start_time;
 
     this.update(time_between_frames)
 
     this.render();
 
-	window.requestAnimationFrame(this._update);
+	window.requestAnimationFrame((start_time) => { this._update(start_time) });
   }
 
   update(delta_time) {

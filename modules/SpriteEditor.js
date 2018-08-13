@@ -10,8 +10,11 @@ export default class SpriteEditor extends TxtEngine {
 	this.active_hovered_label = null;
 
     this.labels = {
-	  "move": this._create_var_label(this.editable_sprite.cursor_pos)
+	  "label": this._create_label(10, 10, "label", "black", "white")
 	};
+
+    // necessary as update() is called with 'this' of parent TxtEngine
+	window._this = this;
   }	
 
   update(delta_time) {
@@ -26,14 +29,11 @@ export default class SpriteEditor extends TxtEngine {
 	 *			   As a result, don't put labels right next to each other. Leave
      *			   some padding.
 	 */ 
-	this.have_detected_a_hovered_label_this_frame = false;
+	_this.have_detected_a_hovered_label_this_frame = false;
 
-    this._listen_for_keyboard_shortcuts();
-    
-	this.labels.forEach((label) => {
-      label.update();
-	});
-
+    // this._listen_for_keyboard_shortcuts();
+    _this.labels["label"].update();  
+   
 	if (!this.have_detected_a_hovered_label_this_frame && 
 		  this.active_hovered_label !== null) {
 	  this.active_hovered_label.clear_hover_props();
@@ -44,7 +44,7 @@ export default class SpriteEditor extends TxtEngine {
 	if (this.input.keys["m"].is_released) {
       this.labels["move"].activate();
 	} else if (this.input.keys["Control"].is_released && this.input.keys["z"].is_released) {
-		
+	  console.log("placeholder");	
 	}
     // move (m), brush (b), erase (e), undo (ctrl-z), redo (ctrl-y), load (ctrl-l), save (ctrl-s)
   }
@@ -61,10 +61,10 @@ export default class SpriteEditor extends TxtEngine {
     label.update = () => {
 	  this.render_str(label.x, label.y, label.static_txt, label.bg_color, label.fg_color);	
     };
+
+	return label;
   }
 
-
-  // advised to pass "static_txt :"
   _create_var_label(x, y, static_txt, bg_color, fg_color, variable, var_width) {
     let var_label = this._create_label(x, y, static_txt, bg_color, fg_color);	  
 	var_label.variable = variable;
@@ -96,12 +96,14 @@ export default class SpriteEditor extends TxtEngine {
 	  this.active_hovered_label = input_label;
 
 	  document.body.style.cursor = "text";
+	  input_label.fg_color = Utils.lighten(input_label.fg_color, 0.3);
 	};
 
     input_label.clear_hover_props = () => {
 	  this.active_hovered_label = null;
 
 	  document.body.style.cursor = "default";
+	  input_label.fg_color = Utils.darken(input_label.fg_color, 0.3);
 	};
 
     input_label.apply_touched_props = () => {
@@ -119,15 +121,18 @@ export default class SpriteEditor extends TxtEngine {
 	    input_label.content_cursor_pos = x_delta;
         input_label.render_cursor_pos = this.input.pointer.x;
 	  }
+
+	  input_label.fg_color = Utils.darken(input_label.fg_color, 0.3);
 	}
 
     input_label.clear_touched_props = () => {
 	  input_label.has_been_touched = false;
 
 	  document.body.style.cursor = "default";
+	  input_label.fg_color = Utils.lighten(input_label.fg_color, 0.3);
 	};
 
-    input_label._inc_render_cursor_pos () => {
+    input_label._inc_render_cursor_pos = () => {
 	  if (input_label.render_cursor_pos + 1 === input_label.width) {
 	    input_label.render_cursor_pos = input_label.x + input_label.static_txt.length; 	  
 	  } else {
@@ -150,6 +155,7 @@ export default class SpriteEditor extends TxtEngine {
 		}
 		if (this._has_touched_label(input_label)) {
 		  input_label.apply_touched_props();
+		}
 	  } else {
 	    if (this.pointer.keys["ArrowRight"].is_pressed) {
 		  input_label._inc_render_cursor_pos();
@@ -185,7 +191,7 @@ export default class SpriteEditor extends TxtEngine {
 	  );	
 
 	  if (input_label.has_been_touched) {
-	    this.render_ch(input_label.render_cursor_pos, input_label.y, " ", input_label.bg_color.darken, fg_color);
+	    this.render_ch(input_label.render_cursor_pos, input_label.y, " ", Utils.darken(input_label.bg_color, 0.3), input_label.fg_color);
 	  }
     };
   }
@@ -206,25 +212,20 @@ export default class SpriteEditor extends TxtEngine {
 
   _create_tool_label(x, y, txt, bg_color, fg_color, on_active) {
     let input_label = this._create_label(x, y, txt, bg_color, fg_color);	  
-	let input_label.content = new Array(max_width);
+	input_label.content = new Array(max_width);
 
     variable_label.update = () => {
 	  this.render_str(x, y, txt, bg_color, fg_color);	
     };
-	  
   }
 
-  _is_hovering_over_label(label) {
+  _are_hovering_over_label(label) {
     return (this.input.pointer.x >= label.x && this.input.pointer.x < label.width &&
 	         this.input.pointer.y === label.y);
   }
 
-  _has_clicked_label(label) {
-    return (this.input.pointer.has_touched && this._is_hovering_over_label(label));
+  _have_touched_label(label) {
+    return (this.input.pointer.has_touched && this._are_hovering_over_label(label));
   }
-
-  }
-
-}
 
 }
