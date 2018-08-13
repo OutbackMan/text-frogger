@@ -68,10 +68,12 @@ export default class SpriteEditor extends TxtEngine {
 	input_label.input_width = input_width;
 	input_label.content = new Array(input_width).fill(" ");
 	input_label.is_active = false;
-	input_label.cursor_pos = -1;
+	input_label.content_cursor_pos = -1;
+	input_label.render_cursor_pos = -1;
 
     input_label.apply_hover = () => {
 	  document.body.style.cursor = "text";
+	  // lighten input_label.fg_color =
 	  this.are_hovering_over_a_label = true; 
 	  this.recent_hovering_label = input_label;
 	};
@@ -79,18 +81,42 @@ export default class SpriteEditor extends TxtEngine {
     input_label.clear_hover = () => {
 	  document.body.style.cursor = "default";
 	  this.recent_hovering_label = null;
-	}
+	};
+
+    input_label.deactivate = () => {
+	  document.body.style.cursor = "default";
+	  input_label.is_active = false;
+	};
 
     input_label.activate = () => {
-	  this.active_label.is_active = false;
+	  document.body.style.cursor = "text";
+	  this.active_label.deactivate();
 	  input_label.is_active = true;
 	  this.active_label = input_label;
 
       let x_delta = this.input.pointer.x - input_label.x;
 	  if (x_delta < input_label.txt.length + 2) {
-	    input_label.cursor_pos = 0; 
+        input_label.render_cursor_pos = input_label.x + input_label.txt.length + 2;
+	    input_label.content_cursor_pos = 0; 
 	  } else {
-	    input_label.cursor_pos = x_delta;
+	    input_label.content_cursor_pos = x_delta;
+        input_label.render_cursor_pos = this.input.pointer.x;
+	  }
+	}
+
+    input_label._inc_render_cursor_pos () => {
+	  if (input_label.render_cursor_pos + 1 === input_label.width) {
+	    input_label.render_cursor_pos = input_label.x + input_label.txt.length + 2; 	  
+	  } else {
+	    input_label.render_cursor_pos++;
+	  }
+	}
+
+    input_label._dec_render_cursor_pos = () => {
+	  if (input_label.render_cursor_pos - 1 < input_label.x + input_label.txt.length + 2) {
+	    input_label.render_cursor_pos = input_label.x + input_label.width - 1;
+	  } else {
+	    input_label.render_cursor_pos--;
 	  }
 	}
 
@@ -103,17 +129,29 @@ export default class SpriteEditor extends TxtEngine {
 		  input_label.activate();
 	  } else {
 	    if (this.pointer.keys["ArrowRight"].is_pressed) {
-		  input_label.cursor_pos = (input_label.cursor_pos + 1) % (input_label.width - input_label.txt + 2);
+		  input_label._inc_render_cursor_pos();
+		  input_label._inc_content_cursor_pos();
 		} else if (this.pointer.keys["ArrowLeft"].is_pressed) {
-		  input_label.cursor_pos += % (input_label.width - input_label.txt + 2);
+		  input_label._dec_render_cursor_pos();
+		  input_label._dec_content_cursor_pos();
+		} else if (this.pointer.keys["Backspace"].is_pressed) {
+		  input_label.content[input_label.content_cursor_pos] = " ";
+		  input_label._dec_render_cursor_pos();
+		  input_label._dec_content_cursor_pos();
+		} else if (this.pointer.keys["Space"].is_pressed) {
+		  input_label.content[input_label.content_cursor_pos] = " ";
+		  input_label._inc_render_cursor_pos();
+		  input_label._inc_content_cursor_pos();
 		} else {
-	      this.input.keys.forEach(() => {
-		    if (key.is_pressed) {
-		      input_label.content[input_label.cursor_pos] = key;
-			}
+		  Object.keys(this.input.keys).forEach((key) => {
+		    if (this.input.keys[key].is_pressed && key.length === 1) {
+		      input_label.content[input_label.content_cursor_pos] = key;
+		      input_label._inc_render_cursor_pos();
+		      input_label._inc_content_cursor_pos();
+		    } 
 		  });
 		}
-	    this.render_ch(input_label.cursor_pos, input_label.y, " ", input_label.bg_color.darken, fg_color);
+	    this.render_ch(input_label.render_cursor_pos, input_label.y, " ", input_label.bg_color.darken, fg_color);
 	  }
 
 	  this.render_str(
