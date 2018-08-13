@@ -5,32 +5,58 @@ export default class SpriteEditor extends TxtEngine {
   constructor(canvas_dom_elem, width, height, default_bg, default_fg, default_ch) {
     super(canvas_dom_elem, width, height, default_bg, default_fg, default_ch);
 
-    this.active_label = "move";
-	this.are_hovering_over_a_label = false;
+    this.active_label = null;
+	this.have_detected_hovering_label_this_frame = false;
 	this.recent_hovering_label = null;
 
     this.labels = {
-	  "move": this._create_touchable_label(3, 4, "MOVE", "blue", "white", () => {
-	            if (!this.is_active) {
-				  this.labels[this.active_tool].is_active = false;
-				  this.active_tool = "move";
-	              document.body.style.cursor = "move";	  
-	              move_label.fg_color = Utils.darken(move_label.fg_color, 0.3);
-	            } else {
-	              this.is_active = true;	  
-	            }
-	          }),
+	  "move": this._create_touchable_label()
 	};
   }	
 
-  _create_label(x, y, txt, bg_color, fg_color) {
+  update(delta_time) {
+	/* NOTE(Ryan): Every frame we detect the user's mouse over a 'hoverable' 
+	 *             label we set this to true. 
+	 *			   To correctly reset the previous 'hoverable' label's styling,
+	 *			   at least one animation frame must capture the mouse not over
+	 *             any other 'hoverable' label. For this to work, we assume
+	 *             that in moving the mouse from one 'hoverable' label to another 
+	 *			   it will first be over no 'hoverable' labels before it is over
+	 *			   another one.
+	 *			   As a result, don't put labels right next to each other. Leave
+     *			   some padding.
+	 */ 
+	this.have_detected_hovering_label_this_frame = false;
+
+    this._listen_for_keyboard_shortcuts();
+    
+	this.labels.forEach((label) => {
+      label.update_and_render();
+	});
+
+	if (!this.have_detected_hovering_label_this_frame && 
+		  this.recent_hovering_label !== null) {
+	  this.recent_hovering_label.reset_hover_props(true);
+	}
+  }
+
+  _listen_for_key_shortcuts() {
+	if (this.input.keys["m"].is_released) {
+      this.labels["move"].activate();
+	} else if (this.input.keys["Control"].is_released && this.input.keys["z"].is_released) {
+		
+	}
+    // move (m), brush (b), erase (e), undo (ctrl-z), redo (ctrl-y), load (ctrl-l), save (ctrl-s)
+  }
+
+  _create_label(x, y, static_txt, bg_color, fg_color) {
     let label = Object.create(null);
     label.x = x;
     label.y = y;
-    label.txt = txt;
+    label.static_txt = static_txt;
     label.bg_color = bg_color;
     label.fg_color = fg_color;
-	label.width = txt.length;
+	label.width = static_txt.length;
 
     label.update = () => {
 	  this.render_str(label.x, label.y, label.txt, label.bg_color, label.fg_color);	
@@ -188,18 +214,6 @@ export default class SpriteEditor extends TxtEngine {
 	  
   }
 
-  update(delta_time) {
-	this.are_hovering_over_a_label = false;
-
-    this.shortcuts.forEach()
-    
-	this.labels.forEach((label) => {
-      label.update_and_render();
-	});
-
-	if (!this.are_hovering_over_a_label && this.recent_hovering_label !== null) {
-	  this.recent_hovering_label.reset_hover(true);
-	}
   }
 
 }
