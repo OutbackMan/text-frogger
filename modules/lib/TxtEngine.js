@@ -1,9 +1,9 @@
 import * as Debug from "../Debug.js";
 
 class _TxtEngineInputHandler {
-  constructor(x_scale, y_scale) {
-    this._x_scale = x_scale;
-    this._y_scale = y_scale;
+  constructor(render_x_scale, render_y_scale) {
+    this._render_x_scale = render_x_scale;
+    this._render_y_scale = render_y_scale;
 
     this._us_keys = ["Escape", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", 
                       "F9", "F10", "F11", "F12", "~","`", "1", "!", "2", "'", 
@@ -47,8 +47,8 @@ class _TxtEngineInputHandler {
         return; 
       }  
   
-      this.pointer.x = evt.clientX / this.x_scale; 	
-  	  this.pointer.y = evt.clientY / this.y_scale; 	
+      this.pointer.x = parseInt(evt.clientX / this._render_x_scale, 10);
+  	  this.pointer.y = parseInt(evt.clientY / this._render_y_scale, 10);
   
       for (let i = 0; i < this._pointers_down.length; ++i) {
   	    if (this._pointers_down[i].pointerId === evt.pointerId) {
@@ -95,8 +95,8 @@ class _TxtEngineInputHandler {
 
     window.onpointerdown = (evt) => {
       if (this.pointer.drag_start_x === null || this.pointer.drag_start_y === null) {
-        this.pointer.drag_start_x = evt.clientX / this.x_scale;
-        this.pointer.drag_start_y = evt.clientX / this.y_scale;
+        this.pointer.drag_start_x = parseInt(evt.clientX / this._render_x_scale, 10);
+        this.pointer.drag_start_y = parseInt(evt.clientX / this._render_y_scale, 10);
       }
 
       this._pointers_down.push(evt);
@@ -135,12 +135,12 @@ class _TxtEngineInputHandler {
 
     this._touched_reset = null;
     window.onclick = window.onpointerleave = (evt) => {
-      this.pointer.touched = true;
+      this.pointer.has_touched = true;
       if (this._touched_reset !== null) {
         clearTimeout(this._touched_reset);
       }
       this._touched_reset = setTimeout(() => {
-        this._update_btn_holder(evt, false, false, false); 
+        this.pointer.has_touched = false;
       }, 150);
     };
 
@@ -173,6 +173,7 @@ class _TxtEngineInputHandler {
     }  
     let btn = this._get_btn_holder_from_evt(evt); 
 
+    console.assert(typeof btn !== "undefined", "why?");
     btn.is_pressed = is_pressed;
     btn.is_down = is_down;
     btn.is_released = is_released;
@@ -221,6 +222,8 @@ export default class TxtEngine {
 
     this.on_touch_device = (typeof window.orientation !== "undefined");
 
+    this.input = new _TxtEngineInputHandler(this._x_scale * this._ch_width, this._y_scale * this._ch_height);
+
     this._scale_to_current_window_dimensions();
 
     window.onresize = window.onorientationchange = (evt) => {
@@ -229,13 +232,10 @@ export default class TxtEngine {
 
     this.when_last_update_frame = window.performance.now();
 
-    this.input = new _TxtEngineInputHandler(this._x_scale * this._ch_width, this._y_scale * this._ch_height);
   }
 
   start() {
-	/* NOTE(Ryan): The value of 'this' must be binded when used as a funcref
-	*/
-    window.requestAnimationFrame((start_time) => { this._update(start_time) });	  
+    window.requestAnimationFrame(this._update.bind(this));	  
   }
 
   _update(frame_start_time) {
@@ -246,7 +246,7 @@ export default class TxtEngine {
 
     this.render();
 
-	window.requestAnimationFrame((start_time) => { this._update(start_time) });
+	window.requestAnimationFrame(this._update.bind(this));
   }
 
   update(delta_time) {
@@ -310,6 +310,9 @@ export default class TxtEngine {
     this._x_scale = NUM_CH_COULD_BE_DISPLAYED_X / this._logical_width;
     this._y_scale = NUM_CH_COULD_BE_DISPLAYED_Y / this._logical_height;
 
+    this.input._render_x_scale = this._x_scale * this._ch_width;
+    this.input._render_y_scale = this._y_scale * this._ch_height;
+
     this._ctx.scale(this._x_scale, this._y_scale);
   }
 
@@ -344,7 +347,7 @@ export default class TxtEngine {
     }
 
     for (let ch_index = 0; ch_index < str.length; ++ch_index) {
-      this.set_ch(x + ch_index, y, str[ch_index], bg_color, fg_color);
+      this.render_ch(x + ch_index, y, str[ch_index], bg_color, fg_color);
 	}
   }
 
@@ -382,3 +385,7 @@ export default class TxtEngine {
     }                                       
   }
 }
+
+/*
+  let css scale with 100%  (canvas.width = canvas.height * canvas.clientWidth / canvas.clientHeight)
+*/

@@ -3,8 +3,8 @@ import SpriteEditor from "./modules/SpriteEditor.js";
 function sprite_editor() {
   const SPRITE_EDITOR_INSTANCE = new SpriteEditor(
                                        document.querySelector(".SpriteEditor"),
-									   200,
-									   200,
+									   100,
+									   100,
                                                                            "black",
                                                                            "white",
                                                                            " "

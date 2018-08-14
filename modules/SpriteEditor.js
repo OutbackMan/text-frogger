@@ -5,16 +5,16 @@ export default class SpriteEditor extends TxtEngine {
   constructor(canvas_dom_elem, width, height, default_bg, default_fg, default_ch) {
     super(canvas_dom_elem, width, height, default_bg, default_fg, default_ch);
 
-    this.most_recently_touched_label = null;
-	this.have_detected_a_hovered_label_this_frame = false;
-	this.active_hovered_label = null;
+    window.self = this;
 
-    this.labels = {
-	  "label": this._create_label(10, 10, "label", "black", "white")
+    self.most_recently_touched_label = null;
+	self.have_detected_a_hovered_label_this_frame = false;
+	self.active_hovered_label = null;
+
+    self.labels = {
+	  "label": self._create_label(10, 10, "llabellabellabellabellabelabel", "black", "white")
 	};
 
-    // necessary as update() is called with 'this' of parent TxtEngine
-	window._this = this;
   }	
 
   update(delta_time) {
@@ -29,20 +29,20 @@ export default class SpriteEditor extends TxtEngine {
 	 *			   As a result, don't put labels right next to each other. Leave
      *			   some padding.
 	 */ 
-	_this.have_detected_a_hovered_label_this_frame = false;
+	self.have_detected_a_hovered_label_this_frame = false;
 
     // this._listen_for_keyboard_shortcuts();
-    _this.labels["label"].update();  
-   
-	if (!this.have_detected_a_hovered_label_this_frame && 
-		  this.active_hovered_label !== null) {
-	  this.active_hovered_label.clear_hover_props();
+    self.labels["label"].update();  
+
+	if (!self.have_detected_a_hovered_label_this_frame && 
+		  self.active_hovered_label !== null) {
+	  self.active_hovered_label.clear_hover_props();
 	}
   }
 
   _listen_for_key_shortcuts() {
 	if (this.input.keys["m"].is_released) {
-      this.labels["move"].activate();
+      self.labels["move"].activate();
 	} else if (this.input.keys["Control"].is_released && this.input.keys["z"].is_released) {
 	  console.log("placeholder");	
 	}
@@ -66,7 +66,7 @@ export default class SpriteEditor extends TxtEngine {
   }
 
   _create_var_label(x, y, static_txt, bg_color, fg_color, variable, var_width) {
-    let var_label = this._create_label(x, y, static_txt, bg_color, fg_color);	  
+    let var_label = self._create_label(x, y, static_txt, bg_color, fg_color);	  
 	var_label.variable = variable;
 	var_label.var_width = var_width;
 	var_label.width = var_label.static_txt.length + var_width;
